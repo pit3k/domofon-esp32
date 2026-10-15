@@ -109,6 +109,23 @@ for f in [k for k in report if "outline" in k or "slot" in k]:
     check(sw.intersection(outline.buffer(-0.02)).difference(allowed).area < 0.01, f"{f}: end mill does not cut into the board ({bad_area:.3f} mm2 incl. 2.4 mm holes)")
     check(copper.distance(sw) > 0.2, f"{f}: >0.2 mm from copper ({copper.distance(sw):.2f} mm)")
 
+# full-depth coverage: slot and 2.4 mm holes must be cut out completely, outline must keep board size
+zbot = CFG["endmill"]["total_depth"]
+for f in [k for k in report if "slot" in k]:
+    deep = [LineString([(m[1], m[2]), (m[4], m[5])]) for m in report[f][7]
+            if m[0] == "G1" and min(m[3], m[6]) <= zbot + 1e-3 and (m[1], m[2]) != (m[4], m[5])]
+    sw = unary_union([c.buffer(r_t, quad_segs=16) for c in deep])
+    slots = [Polygon(i) for p in (outline.geoms if hasattr(outline, "geoms") else [outline]) for i in p.interiors]
+    left = sum(sl.difference(sw).area for sl in slots)
+    check(left < 0.01, f"{f}: slot cut through on full width ({left:.4f} mm2 left)")
+    hl = sum(Point(h[1], h[2]).buffer(h[0] / 2 - 0.01, quad_segs=32).difference(sw).area for h in holes if h[0] > 2)
+    check(hl < 0.01, f"{f}: 2.4 mm holes fully cleared ({hl:.4f} mm2 left)")
+for f in [k for k in report if "outline" in k]:
+    pts = [(m[4], m[5]) for m in report[f][7] if m[0] == "G1" and m[6] <= zbot + 1e-3]
+    ext = Polygon(outline.exterior.coords) if not hasattr(outline, "geoms") else Polygon(outline.geoms[0].exterior.coords)
+    ds = [ext.exterior.distance(Point(q)) for q in pts]
+    check(abs(min(ds) - r_t) < 0.01 and max(ds) < r_t + 0.02, f"{f}: tool centre {min(ds):.3f}..{max(ds):.3f} mm from edge (r={r_t}) -> board keeps {W:.2f} x {H:.2f}")
+
 # ---------- render
 def draw(ax, show_iso=True, show_all=True):
     for isl in islands:

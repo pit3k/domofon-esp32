@@ -30,11 +30,12 @@ retract = 1.0         # retract height between holes
 # sizes are taken from the Excellon files; one output file per diameter
 
 [endmill]             # flat end mill used for 2.4 mm holes, slot and outline
-diameter = 1.0
-step_down = 0.5
+diameter = 0.8
+stepover = 0.6        # radial step between concentric passes (fraction of diameter) - slot / 2.4 mm holes
+step_down = 0.4       # ~0.5 x D for a thin cutter in FR4
 total_depth = -1.75   # 1.5 mm board + 0.25 mm into spoilboard
-feed = 200
-plunge = 40
+feed = 150            # ~0.004 mm/tooth at 18000 RPM, 2 flutes - gentle for a 0.8 mm cutter
+plunge = 30
 rpm = 18000
 
 [tabs]

@@ -14,13 +14,13 @@ Płytka jednostronna **55,5 × 45,9 mm**, miedź tylko od spodu (B.Cu). Pliki: [
 | 2 | `02_drill_0.8mm.nc` | wiertło 0,8 mm (46 otw.) | Z −1,9 | F60 | 18 000 | 3 min |
 | 3 | `03_drill_1.0mm.nc` | wiertło 1,0 mm (26 PTH + 2 NPTH) | Z −1,9 | F60 | 18 000 | 2 min |
 | 4 | `04_drill_1.2mm.nc` | wiertło 1,2 mm (11 otw.) | Z −1,9 | F60 | 18 000 | 1 min |
-| 5 | `05_mill_holes2.4_slot_endmill1.0mm.nc` | frez płaski 1,0 mm | Z −1,75 (co 0,5) | F200 / F40 | 18 000 | 2 min |
-| 6 | `06_outline_tabs_endmill1.0mm.nc` | frez płaski 1,0 mm (to samo) | Z −1,75 (co 0,5) | F200 / F40 | 18 000 | 5 min |
+| 5 | `05_mill_holes2.4_slot_endmill0.8mm.nc` | frez płaski 0,8 mm | Z −1,75 (co 0,4) | F150 / F30 (rampa F60) | 18 000 | 6 min |
+| 6 | `06_outline_tabs_endmill0.8mm.nc` | frez płaski 0,8 mm (to samo) | Z −1,75 (co 0,4) | F150 / F30 | 18 000 | 8 min |
 
 Plik 5 to dwa otwory Ø2,4 (zaczepy gniazda J1, frezowane po okręgu) i szczelina izolacyjna pod U1/K1.
 Plik 6 to kontur z 4 mostkami (2 mm szerokości, 0,6 mm grubości).
 Pliki 5 i 6 używają tego samego frezu, więc **między nimi nie wymieniasz narzędzia**.
-Razem z wymianami narzędzi wychodzi ok. 45 min.
+Razem z wymianami narzędzi wychodzi ok. 50 min.
 
 Każdy plik: `G21 G90`, start na Z10, `M3 S…`, 3 s na rozpędzenie wrzeciona, na końcu `M5`, powrót na X0 Y0 (Z10) i `M30`.
 Nie ma `M6` ani cykli wiertarskich (same `G0/G1/G2`).
@@ -33,7 +33,7 @@ Nie ma `M6` ani cykli wiertarskich (same `G0/G1/G2`).
 ## Potrzebne
 - Laminat FR4 1,5 mm, miedź 35 µm, jednostronny. Minimum **70 × 60 mm**, wygodnie **80 × 70 mm**.
 - Płyta ofiarna (MDF), taśma dwustronna (cienka, np. do wykładzin), alkohol IPA.
-- V-bit 30°/0,2 mm, wiertła 0,8 / 1,0 / 1,2 mm, frez płaski 1,0 mm (wszystkie z trzpieniem 3,175 mm), tuleja ER 1/8".
+- V-bit 30°/0,2 mm, wiertła 0,8 / 1,0 / 1,2 mm, frez płaski 0,8 mm (wszystkie z trzpieniem 3,175 mm), tuleja ER 1/8".
 - **Sonda 3D** (V6 / TP06 „Anti-roll 3D Touch Probe”) z tuleją ER **6 mm**, podłączona do wejścia **Probe** Flexi-HAL.
 - Kartka papieru (ok. 0,1 mm), multimetr, suwmiarka.
 
@@ -124,8 +124,8 @@ Dlatego później zerujesz Z V-bitu **dokładnie w X0 Y0**.
 30. Wiertło 0,8 → plik `02`, wymiana (kroki 25–29) → wiertło 1,0 → `03`, wymiana → wiertło 1,2 → `04`.
 31. Po każdym pliku sprawdź, czy otwory trafiły w środki padów.
 
-### G. Frez 1,0 mm: otwory 2,4, szczelina, kontur (pliki 05, 06)
-32. Załóż frez płaski 1,0 mm, zeruj tylko Z, uruchom `05_…`.
+### G. Frez 0,8 mm: otwory 2,4, szczelina, kontur (pliki 05, 06)
+32. Załóż frez płaski 0,8 mm, zeruj tylko Z, uruchom `05_…`.
 33. Bez wymiany narzędzia uruchom `06_outline_tabs_…`. Kontur idzie na zewnątrz płytki w 4 przejściach i zostawia 4 mostki.
 34. Odkurz pył.
 

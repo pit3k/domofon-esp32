@@ -39,7 +39,7 @@ python3 cnc/scripts/verify_gcode.py
 2. Drill 0.8 mm — 46 PTH holes.
 3. Drill 1.0 mm — 26 PTH + 2 NPTH.
 4. Drill 1.2 mm — 11 PTH.
-5. Flat end mill 1.0 mm — two Ø2.4 mm NPTH holes (helical), internal 2 mm isolation slot under U1/K1, then board outline with 4 tabs.
+5. Flat end mill 0.8 mm — two Ø2.4 mm NPTH holes (2 concentric helical circles), internal 2 mm isolation slot under U1/K1 (2 concentric ramped laps), then board outline with 4 tabs. Step-down 0.4 mm, F150, plunge F30, 18 000 RPM.
 
 ## Do not mill
 `hardware/pcb/gerbers/domofon-F_Cu-jumpers_DO_NOT_MILL.gtl` — models the top-side wire jumper JP1 for DRC only. After milling, solder a wire on the **component** side.

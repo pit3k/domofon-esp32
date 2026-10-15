@@ -179,29 +179,48 @@ while z > E["total_depth"] + 1e-6:
     z = max(z - E["step_down"], E["total_depth"]); depths.append(round(z, 3))
 
 lines = header(f"{n:02d} holes 2.4 mm + internal slot", f"flat end mill {E['diameter']} mm", E["rpm"])
+stepover = E["diameter"] * E.get("stepover", 0.6)
 for d, x, y, kind in milled_holes:
-    rr = d / 2 - r_t
-    lines += [f"( hole {d} mm {kind} at X{x} Y{y} - helical, circle r={rr:.3f} )",
-              f"G0 Z{M['safe_z']}", f"G0 X{f(x + rr)} Y{f(y)}", f"G1 Z0.2 F{E['plunge']}"]
-    zc = 0.2
-    for zd in depths:  # one full helical turn per step, then a flat turn at the bottom
-        lines.append(f"G2 X{f(x + rr)} Y{f(y)} I{f(-rr)} J0 Z{f(zd)} F{E['plunge'] * 2}")
-    lines.append(f"G2 X{f(x + rr)} Y{f(y)} I{f(-rr)} J0 F{E['feed']}")
+    # concentric circles from the inside out until the centre core is covered (no loose plug left)
+    radii = [d / 2 - r_t]
+    while radii[-1] - r_t > 1e-6:
+        radii.append(max(radii[-1] - stepover, 0.05))
+    radii = radii[::-1]
+    lines.append(f"( hole {d} mm {kind} at X{x} Y{y} - helical, circle r = {', '.join(f'{r:.3f}' for r in radii)} )")
+    for rr in radii:
+        lines += [f"G0 Z{M['safe_z']}", f"G0 X{f(x + rr)} Y{f(y)}", f"G1 Z0.2 F{E['plunge']}"]
+        for zd in depths:  # one full helical turn per step, then a flat turn at the bottom
+            lines.append(f"G2 X{f(x + rr)} Y{f(y)} I{f(-rr)} J0 Z{f(zd)} F{E['plunge'] * 2}")
+        lines.append(f"G2 X{f(x + rr)} Y{f(y)} I{f(-rr)} J0 F{E['feed']}")
     lines.append(f"G0 Z{M['safe_z']}")
-# internal slot(s) = interior rings of the board outline
+# internal slot(s) = interior rings of the board outline; concentric offsets, innermost first,
+# each depth step ramped down along one lap, finished with one flat lap at full depth
 inner = []
 for p in (outline.geoms if hasattr(outline, "geoms") else [outline]):
     inner += [Polygon(i) for i in p.interiors]
 slot_paths = []
 for s in inner:
-    path = s.buffer(-r_t, quad_segs=16)
-    for r in rings(path):
-        slot_paths.append(r)
-        lines += ["( internal slot under U1/K1 )", f"G0 Z{M['safe_z']}", f"G0 X{f(r[0][0])} Y{f(r[0][1])}"]
-        for zd in depths:
-            lines.append(f"G1 Z{f(zd)} F{E['plunge']}")
+    offs = []
+    off = r_t
+    while not s.buffer(-off, quad_segs=16).is_empty:
+        offs.append(off); off += stepover
+    for off in offs[::-1]:
+        for r in rings(s.buffer(-off, quad_segs=16)):
+            slot_paths.append(r)
+            seg = [math.dist(r[i], r[i + 1]) for i in range(len(r) - 1)]
+            Ltot = sum(seg)
+            lines += [f"( internal slot under U1/K1, offset {off:.3f} mm )", f"G0 Z{M['safe_z']}",
+                      f"G0 X{f(r[0][0])} Y{f(r[0][1])}", f"G1 Z0 F{E['plunge']}"]
+            zprev = 0.0
+            for zd in depths:
+                acc = 0.0
+                for i, (x, y) in enumerate(r[1:]):
+                    acc += seg[i]
+                    zz = zprev + (zd - zprev) * acc / Ltot
+                    lines.append(f"G1 X{f(x)} Y{f(y)} Z{f(round(zz, 4))} F{E['plunge'] * 2}")
+                zprev = zd
             lines += [f"G1 X{f(x)} Y{f(y)} F{E['feed']}" for x, y in r[1:]]
-        lines.append(f"G0 Z{M['safe_z']}")
+            lines.append(f"G0 Z{M['safe_z']}")
 lines += footer()
 write(f"{n:02d}_mill_holes2.4_slot_endmill{E['diameter']:.1f}mm.nc", lines); n += 1
 

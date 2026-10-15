@@ -35,12 +35,12 @@ milldrill=false
 # 2.4 mm holes are milled with the end mill (see cam_config.toml [endmill])
 
 # --- outline ---
-cutter-diameter=1.0
+cutter-diameter=0.8
 z-cut=-1.75
-cut-feed=200
-cut-vertfeed=40
+cut-feed=150
+cut-vertfeed=30
 cut-speed=18000
-cut-infeed=0.5
+cut-infeed=0.4
 bridges=2.0
 z-bridges=-0.9
 # 4 bridges placed mid-edge by our script
@@ -50,5 +50,5 @@ z-bridges=-0.9
 # 02_drill_0.8mm.nc
 # 03_drill_1.0mm.nc
 # 04_drill_1.2mm.nc
-# 05_mill_holes2.4_slot_endmill1.0mm.nc
-# 06_outline_tabs_endmill1.0mm.nc
+# 05_mill_holes2.4_slot_endmill0.8mm.nc
+# 06_outline_tabs_endmill0.8mm.nc
