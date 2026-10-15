@@ -1,0 +1,54 @@
+# Reference millproject for pcb2gcode (Debian 13 has no pcb2gcode package).
+# Actual G-code is produced by cnc/scripts/generate_gcode.py from cnc/cam_config.toml.
+# Kept so the parameters are readable in the pcb2gcode form.
+
+# --- inputs (paths relative to repo root) ---
+front=false
+back=hardware/pcb/gerbers/domofon-B_Cu.gbl
+outline=hardware/pcb/gerbers/domofon-Edge_Cuts.gm1
+drill=hardware/pcb/gerbers/domofon-PTH.drl
+# NPTH is merged by our script from hardware/pcb/gerbers/domofon-NPTH.drl
+
+# --- mirror: copper side up ---
+mirror-axis=0
+# our generator mirrors X about the right board edge (x' = W - x) and flips Y so Y grows up
+
+# --- isolation (V-bit 30 deg / 0.2 mm tip) ---
+mill-feed=300
+mill-speed=20000
+vertical-feed=60
+z-work=-0.10
+z-safe=3
+z-change=10
+offset=0.127
+extra-passes=2
+isolation-width=0.45
+voronoi=false
+
+# --- drills ---
+z-drill=-1.9
+drill-feed=60
+drill-speed=18000
+onedrill=false
+nog84=true
+milldrill=false
+# 2.4 mm holes are milled with the end mill (see cam_config.toml [endmill])
+
+# --- outline ---
+cutter-diameter=1.0
+z-cut=-1.75
+cut-feed=200
+cut-vertfeed=40
+cut-speed=18000
+cut-infeed=0.5
+bridges=2.0
+z-bridges=-0.9
+# 4 bridges placed mid-edge by our script
+
+# --- output naming (our script uses numbered names instead) ---
+# 01_isolation_vbit30.nc
+# 02_drill_0.8mm.nc
+# 03_drill_1.0mm.nc
+# 04_drill_1.2mm.nc
+# 05_mill_holes2.4_slot_endmill1.0mm.nc
+# 06_outline_tabs_endmill1.0mm.nc

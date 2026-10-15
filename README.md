@@ -53,7 +53,12 @@ An interface that connects a classic **2-wire analog intercom handset line** (Po
 │   ├── domofon.yaml
 │   ├── secrets.yaml.example
 │   └── components/dtmf_decoder/ # custom component: ADC + Goertzel DTMF decoder
-├── cnc/README.md                # milling notes (PrintNC + Flexi-HAL/grblHAL), G-code TODO
+├── cnc/                         # G-code, operator guide, CAM config & scripts
+│   ├── OPERATOR_GUIDE.md       # step-by-step for PrintNC + ioSender (PL)
+│   ├── README.md               # CAM overview (EN)
+│   ├── cam_config.toml         # feeds, depths, RPM
+│   ├── gcode/*.nc              # one file per tool, numbered
+│   └── previews/               # toolpath PNGs
 └── tools/dtmf_sim.py            # offline simulation of the DTMF decoder algorithm
 ```
 
@@ -95,7 +100,11 @@ esphome run domofon.yaml
 ```
 
 ## CNC
-See [cnc/README.md](cnc/README.md). Machine: PrintNC with Flexi-HAL (grblHAL). G-code is **not generated yet**.
+Machine: **PrintNC** + Flexi-HAL (**grblHAL**), sender **ioSender**.
+Ready G-code lives in [`cnc/gcode/`](cnc/gcode/).
+**Operator guide (PL):** [`cnc/OPERATOR_GUIDE.md`](cnc/OPERATOR_GUIDE.md).
+Overview / regenerate: [`cnc/README.md`](cnc/README.md).
+Do **not** mill `domofon-F_Cu-jumpers_DO_NOT_MILL.gtl` — solder jumper JP1 as a wire on the component side.
 
 ## Safety
 - **Measure the line first**: idle voltage, ring voltage (DC and AC), off-hook voltage and loop current. Pick R5 to match the original handset's current (typically 20–60 mA).

@@ -1,0 +1,43 @@
+# CAM configuration for domofon-esp32 PCB (single-sided, copper on B.Cu)
+# Used by cnc/scripts/generate_gcode.py -> writes cnc/gcode/*.nc
+# Units: mm, mm/min, RPM. Z0 = top of copper surface. XY0 = lower-left corner of the board
+# as seen from the copper (milled) side, i.e. after mirroring.
+
+[material]
+thickness = 1.5     # FR4 laminate incl. copper (measure with calipers!)
+
+[machine]
+safe_z = 3.0          # rapid travel height above copper
+start_z = 10.0        # height at start / end of every file
+spindle_dwell_s = 3   # G4 dwell after M3 so the spindle reaches speed
+
+[isolation]           # V-bit 30 deg, 0.2 mm tip, 3.175 mm shank
+tip_mm = 0.2
+angle_deg = 30.0
+depth = 0.10          # cut depth into copper (35 um Cu -> 0.1 gives margin for slight warp)
+passes = 3            # concentric passes around copper
+overlap = 0.40        # pass-to-pass overlap (fraction of groove width)
+safety = 0.01         # extra distance of the 1st pass from copper (covers polygon/arc approximation)
+feed = 300
+plunge = 60
+rpm = 20000         # PrintNC 2.2 kW VFD spindle, max ~24000; check your $30 / VFD limits
+
+[drill]
+depth = -1.9          # 1.5 mm FR4 + ~0.4 mm into spoilboard
+feed = 60             # plunge feed while drilling
+rpm = 18000
+retract = 1.0         # retract height between holes
+# sizes are taken from the Excellon files; one output file per diameter
+
+[endmill]             # flat end mill used for 2.4 mm holes, slot and outline
+diameter = 1.0
+step_down = 0.5
+total_depth = -1.75   # 1.5 mm board + 0.25 mm into spoilboard
+feed = 200
+plunge = 40
+rpm = 18000
+
+[tabs]
+count = 4
+width = 2.0           # tab length along the outline (plus tool diameter is kept)
+height = 0.6          # tab thickness left in the board (from bottom of the laminate)
