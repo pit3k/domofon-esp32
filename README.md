@@ -46,9 +46,10 @@ An interface that connects a classic **2-wire analog intercom handset line** (Po
 │   │   ├── gerbers/             # Gerber X2 + Excellon (mm) — input for CNC
 │   │   ├── previews/            # PNG renders
 │   │   └── scripts/             # Python/KiCad generators, autorouting, DRC, export
-│   └── bom/
-│       ├── bom.csv              # full bill of materials
-│       └── tme-order.csv        # the actual TME order
+│   ├── bom/
+│   │   ├── bom.csv              # full bill of materials
+│   │   └── tme-order.csv        # the actual TME order
+│   └── enclosure/               # 3D-printed wall box (CadQuery source, STL, 3MF, STEP, previews)
 ├── firmware/esphome/
 │   ├── domofon.yaml
 │   ├── secrets.yaml.example
@@ -98,6 +99,11 @@ cd firmware/esphome
 cp secrets.yaml.example secrets.yaml   # fill in Wi-Fi credentials
 esphome run domofon.yaml
 ```
+
+## Enclosure
+3D-printed flat wall box: 83.5 × 62.8 × 26.9 mm, a base glued to the wall plus a lid held by 4 screws.
+- Cable exits: RJ11 and USB-C point down, and the phone cable comes in through the back.
+- Source and print files are in [`hardware/enclosure/`](hardware/enclosure/). The Polish print and assembly guide is in its [README](hardware/enclosure/README.md).
 
 ## CNC
 Machine: **PrintNC** + Flexi-HAL (**grblHAL**), sender **ioSender**.
