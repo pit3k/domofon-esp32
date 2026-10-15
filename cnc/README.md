@@ -49,4 +49,7 @@ python3 cnc/scripts/verify_gcode.py
 - FR4 1.5 mm, copper 35 µm. Measure your laminate and adjust `cam_config.toml` if needed.
 
 ## Height Map (ioSender)
-Recommended for file `01` only: probe a grid over the board with a crocodile clip on the V-bit shank, then *Apply to program*. Details in the operator guide.
+Recommended for file `01` only.
+- Workflow: 3D touch probe (V6/TP06, NPN-NO, on the Flexi-HAL Probe input) in the spindle → *Probing → Height map* → *Set from program limits*, grid 5 mm → *Start*.
+- The map is relative to its first point (X0 Y0), so set the V-bit Z0 at X0 Y0 (paper method or tool setter), then click *Apply*.
+- Never start the spindle with the probe mounted. Details in the operator guide.
