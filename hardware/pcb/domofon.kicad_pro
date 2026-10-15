@@ -1,0 +1,156 @@
+{
+  "board": {
+    "design_settings": {
+      "defaults": {},
+      "diff_pair_dimensions": [],
+      "drc_exclusions": [],
+      "rules": {
+        "min_clearance": 0.4,
+        "min_track_width": 0.6,
+        "min_through_hole_diameter": 0.8,
+        "min_hole_clearance": 0.25,
+        "min_copper_edge_clearance": 0.5,
+        "min_via_diameter": 1.6,
+        "min_via_annular_width": 0.3,
+        "min_hole_to_hole": 0.25,
+        "min_microvia_diameter": 0.2,
+        "min_microvia_drill": 0.1,
+        "min_silk_clearance": 0.0,
+        "min_text_height": 0.8,
+        "min_text_thickness": 0.08,
+        "solder_mask_to_copper_clearance": 0.0
+      },
+      "rule_severities": {
+        "silk_overlap": "ignore",
+        "silk_over_copper": "ignore",
+        "silk_edge_clearance": "ignore",
+        "courtyards_overlap": "warning",
+        "lib_footprint_issues": "ignore",
+        "lib_footprint_mismatch": "ignore",
+        "footprint_type_mismatch": "ignore",
+        "text_height": "ignore",
+        "text_thickness": "ignore",
+        "missing_courtyard": "ignore",
+        "npth_inside_courtyard": "ignore",
+        "pth_inside_courtyard": "ignore",
+        "padstack": "ignore",
+        "isolated_copper": "warning",
+        "starved_thermal": "warning"
+      },
+      "track_widths": [
+        0.0,
+        0.6,
+        0.8,
+        1.0
+      ],
+      "via_dimensions": [],
+      "zones_allow_external_fillets": false
+    }
+  },
+  "meta": {
+    "filename": "domofon.kicad_pro",
+    "version": 3
+  },
+  "net_settings": {
+    "classes": [
+      {
+        "name": "Default",
+        "clearance": 0.4,
+        "track_width": 0.6,
+        "via_diameter": 1.6,
+        "via_drill": 0.8,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "diff_pair_width": 0.6,
+        "diff_pair_gap": 0.4,
+        "diff_pair_via_gap": 0.4,
+        "wire_width": 6,
+        "bus_width": 12,
+        "line_style": 0,
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 2147483647
+      },
+      {
+        "name": "PWR",
+        "clearance": 0.4,
+        "track_width": 1.0,
+        "via_diameter": 1.6,
+        "via_drill": 0.8,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "diff_pair_width": 0.6,
+        "diff_pair_gap": 0.4,
+        "diff_pair_via_gap": 0.4,
+        "wire_width": 6,
+        "bus_width": 12,
+        "line_style": 0,
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 0
+      },
+      {
+        "name": "LINE",
+        "clearance": 0.5,
+        "track_width": 1.0,
+        "via_diameter": 1.6,
+        "via_drill": 0.8,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "diff_pair_width": 0.6,
+        "diff_pair_gap": 0.4,
+        "diff_pair_via_gap": 0.4,
+        "wire_width": 6,
+        "bus_width": 12,
+        "line_style": 0,
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 0
+      }
+    ],
+    "meta": {
+      "version": 4
+    },
+    "netclass_patterns": [
+      {
+        "netclass": "LINE",
+        "pattern": "L1"
+      },
+      {
+        "netclass": "LINE",
+        "pattern": "L2"
+      },
+      {
+        "netclass": "LINE",
+        "pattern": "N_R12"
+      },
+      {
+        "netclass": "LINE",
+        "pattern": "N_U1A"
+      },
+      {
+        "netclass": "LINE",
+        "pattern": "H"
+      },
+      {
+        "netclass": "LINE",
+        "pattern": "N_T1C5"
+      },
+      {
+        "netclass": "PWR",
+        "pattern": "GND"
+      },
+      {
+        "netclass": "PWR",
+        "pattern": "+3V3"
+      },
+      {
+        "netclass": "PWR",
+        "pattern": "+5V"
+      }
+    ]
+  },
+  "pcbnew": {
+    "page_layout_descr_file": ""
+  }
+}

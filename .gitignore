@@ -1,0 +1,30 @@
+# Python
+.venv/
+.venv-*/
+__pycache__/
+*.pyc
+
+# ESPHome
+.esphome/
+secrets.yaml
+
+# PCB build intermediates (Freerouting DSN/SES, unrouted/routed boards, logs)
+hardware/pcb/work/
+work/
+*.log
+
+# KiCad backups / lock / local settings
+*.bak
+*-backups/
+*.kicad_prl
+*.lck
+~*.lck
+_autosave-*
+fp-info-cache
+*.kicad_sch-bak
+*.kicad_pcb-bak
+*.drc.rpt
+
+# misc
+*.tmp
+.DS_Store

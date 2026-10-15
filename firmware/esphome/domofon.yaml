@@ -1,0 +1,99 @@
+esphome:
+  name: domofon
+
+esp32:
+  board: esp32-c3-devkitm-1   # ESP32-C3 SuperMini (HW-466B)
+  framework:
+    type: esp-idf
+
+wifi: { ssid: !secret wifi_ssid, password: !secret wifi_password }
+api:
+ota: { platform: esphome }
+logger:
+
+# Programowy dekoder DTMF (ADC1 + Goertzel) - komponent lokalny w ./components/dtmf_decoder
+external_components:
+  - source: { type: local, path: components }
+    components: [dtmf_decoder]
+
+dtmf_decoder:
+  id: dtmf
+  pin: GPIO1                 # ADC1_CH1 (tor odbioru: T1 -> C6 220nF -> R9 2k2 -> GPIO1, polaryzacja R10/R11 4k7)
+  enabled: false             # wlaczany razem z off-hook (tylko wtedy T1 "slyszy" linie)
+  sample_rate: 8000
+  block_size: 205            # 25,6 ms na blok
+  min_amplitude: 25          # LSB ADC (~15 mV) - podnies, jesli sa falszywe detekcje
+  max_twist: 8dB
+  min_group_ratio: 6dB
+  min_tone_energy_ratio: 0.4
+  min_on_blocks: 2           # >= ~51 ms tonu
+  min_off_blocks: 2
+  sequence_timeout: 3s
+  debug: false               # true = log poziomow tonow (strojenie progow)
+  last_digit:
+    name: "Domofon DTMF ostatnia cyfra"
+  sequence:
+    name: "Domofon DTMF sekwencja"
+  on_digit:
+    - event.trigger:
+        id: dtmf_event
+        event_type: !lambda "return x;"
+
+event:
+  - platform: template
+    id: dtmf_event
+    name: "Domofon DTMF"
+    event_types: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "#", "A", "B", "C", "D"]
+
+binary_sensor:
+  - platform: gpio
+    name: "Domofon dzwonek"
+    pin: { number: GPIO3, inverted: true, mode: { input: true, pullup: true } }
+    filters:
+      - delayed_on: 50ms
+      - delayed_off: 1500ms
+
+output:
+  - platform: ledc
+    id: tone_low
+    pin: GPIO5
+    frequency: 697Hz
+  - platform: ledc
+    id: tone_high
+    pin: GPIO6
+    frequency: 1209Hz
+
+switch:
+  - platform: gpio
+    id: offhook
+    name: "Domofon off-hook"
+    pin: GPIO4
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - dtmf_decoder.enable: dtmf
+    on_turn_off:
+      - dtmf_decoder.disable: dtmf
+      - dtmf_decoder.clear_sequence: dtmf
+
+script:
+  - id: open_gate
+    mode: single
+    then:
+      - switch.turn_on: offhook
+      - delay: 800ms
+      # wlasny ton tez trafia na ADC - wyciszamy dekoder na czas nadawania
+      - dtmf_decoder.disable: dtmf
+      - output.set_level: { id: tone_low, level: 50% }
+      - output.set_level: { id: tone_high, level: 50% }
+      - delay: 200ms
+      - output.turn_off: tone_low
+      - output.turn_off: tone_high
+      - delay: 50ms
+      - dtmf_decoder.enable: dtmf
+      - delay: 950ms
+      - switch.turn_off: offhook
+
+button:
+  - platform: template
+    name: "Domofon otwórz furtkę"
+    on_press: { script.execute: open_gate }

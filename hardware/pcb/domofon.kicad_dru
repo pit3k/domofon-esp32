@@ -1,0 +1,15 @@
+(version 1)
+# Domofon - reguly pod frezowanie V 30 deg / 0,2 mm
+(rule "izolacja_galwaniczna"
+  (constraint clearance (min 4.0mm))
+  (condition "A.NetClass == 'LINE' && B.NetClass != 'LINE' && B.Type != 'Text'"))
+(rule "track_min_signal"
+  (layer B.Cu)
+  (condition "A.Type == 'Track' && A.NetClass == 'Default'")
+  (constraint track_width (min 0.6mm)))
+(rule "track_min_power"
+  (condition "A.Type == 'Track' && A.NetClass == 'PWR'")
+  (constraint track_width (min 1.0mm)))
+(rule "track_min_line"
+  (condition "A.Type == 'Track' && A.NetClass == 'LINE'")
+  (constraint track_width (min 1.0mm)))
