@@ -14,11 +14,11 @@ J1,"RJ11 6P4C jack, 1 port, right-angle THT - extra handset in parallel with the
 "R1,R2","Series resistors for U1 LED (ring detection)",4k7 0.25 W,own stock,2,0,stock
 R3,"GPIO3 pull-up (optional)",10k 0.25 W,own stock,1,0,stock
 R4,"K1 LED resistor (GPIO4)",330R 0.25 W,own stock,1,0,stock
-"R6a,R6b","DTMF transmit RC filter",1k 0.25 W,own stock,2,0,stock
-"R8a,R8b","DTMF tone summing (GPIO5/GPIO6)",2k2 0.25 W,own stock,2,0,stock
+"R6a,R6b","DTMF transmit RC filter (series, with C2/C3)",100R 0.25 W,own stock,2,0,stock
+"R8a,R8b","DTMF tone summing (GPIO5/GPIO6)",330R 0.25 W,own stock,2,0,stock
 R9,"Series resistor before ADC (GPIO1)",2k2 0.25 W,own stock,1,0,stock
 "R10,R11","ADC input bias 1.65 V",4k7 0.25 W,own stock,2,0,stock
-"C2,C3","DTMF transmit RC filter (fc ~3.4 kHz), yellow box film cap, 5.08 mm pitch",47 nF (>=50 V),own stock,2,0,stock
+"C2,C3","DTMF transmit RC filter (carrier 200 kHz), yellow box film cap, 5.08 mm pitch",220 nF (>=50 V),own stock,2,0,stock
 C7,"ADC anti-aliasing filter (fc ~4.2 kHz), film cap, 5.08 mm pitch",33 nF,own stock,1,0,stock
 C6,"DTMF receive coupling, film cap, 5.08 mm pitch",220 nF,own stock,1,0,stock
 C5,"Line-side coupling (blocks DC), film cap, 5.08 mm pitch",1 uF / 63 V (marking 105J63),own stock,1,0,stock

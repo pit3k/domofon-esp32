@@ -11,8 +11,8 @@ Full, detailed notes in Polish: [design-notes-pl.md](design-notes-pl.md) (netlis
 |---|---|---|
 | Ring detection | R1+R2 (4k7+4k7) → U1 LTV-814 (AC-input optocoupler) → GPIO3 with pull-up R3 and filter C1 10 µF | GPIO3 (HW-466B R5) |
 | Off-hook | K1 AQY212GH PhotoMOS (LED via R4 330 Ω) switches R5 330 Ω 1 W load + T1 line winding onto the line | GPIO4 (R4) |
-| DTMF transmit | two LEDC PWM tones (low group on GPIO5, high group on GPIO6) → R8a/R8b summing (node A) → 2nd-order RC low-pass R6a/C2, R6b/C3 (~3.4 kHz) → C4 → level trimmer R7 → T1 (600:600) → C5 → line | GPIO5 (L1), GPIO6 (L2) |
-| DTMF receive | T1 → C6 220 nF → R9 2k2 → GPIO1 (ADC1), bias 1.65 V by R10/R11, anti-alias C7 33 nF, clamp D4/D5 BAT85; software Goertzel decoder | GPIO1 (R7) |
+| DTMF transmit | sine PWM (`dtmf_tone`, carrier 200 kHz) low group on GPIO5, high group on GPIO6 → R8a/R8b 330 Ω summing (node A) → 2nd-order RC low-pass R6a/C2, R6b/C3 (100 Ω / 220 nF, ~55 dB at 200 kHz) → C4 → level trimmer R7 → T1 (600:600) → C5 1 µF → line | GPIO5 (L1), GPIO6 (L2) |
+| DTMF receive | T1 → C6 220 nF → R9 2k2 → GPIO1 (ADC1), bias 1.65 V by R10/R11, anti-alias C7 33 nF, clamp D4/D5 BAT85; software Goertzel decoder ([pit3k/esphome-dtmf-decoder](https://github.com/pit3k/esphome-dtmf-decoder)) | GPIO1 (R7) |
 | Protection | D2 P6KE36CA bidirectional TVS across L1/L2 | – |
 | Extra handset | J1 RJ11 (pins 2/3 = L1/L2) in parallel with X1 | – |
 

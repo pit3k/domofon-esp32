@@ -11,8 +11,8 @@ An interface that connects a classic **2-wire analog intercom handset line** (Po
 ## Features
 - **Ring detection** — AC-input optocoupler (LTV-814) on the line, debounced input on GPIO3.
 - **Off-hook** — PhotoMOS relay (AQY212GH) connects a load resistor and a 600:600 line transformer, just like lifting the handset.
-- **DTMF transmit** — two hardware PWM tones (low + high group) summed and filtered, coupled through the transformer. Any DTMF digit is possible; the default firmware sends "1" to open the gate.
-- **DTMF receive (software)** — line audio via the transformer to ADC1 (GPIO1), decoded on the ESP with a Goertzel filter bank (custom ESPHome component `dtmf_decoder`). Works only while off-hook.
+- **DTMF transmit** — sine PWM (external component [esphome-dtmf-tone](https://github.com/pit3k/esphome-dtmf-tone)) summed and filtered, coupled through the transformer. Any DTMF sequence; the default sends "1" to open the gate.
+- **DTMF receive (software)** — line audio via the transformer to ADC1 (GPIO1), decoded on the ESP with a Goertzel filter bank ([esphome-dtmf-decoder](https://github.com/pit3k/esphome-dtmf-decoder)). Works only while off-hook.
 - **Galvanic isolation** — ESP ground never touches the line; 4 mm isolation gap + milled slot on the PCB.
 - **Extra handset jack** — RJ11 (J1) wired in parallel with the line.
 
@@ -20,7 +20,9 @@ An interface that connects a classic **2-wire analog intercom handset line** (Po
 | Entity | Name | What it does |
 |---|---|---|
 | `binary_sensor` | Domofon dzwonek | on while someone rings (50 ms on / 1.5 s off filter) |
-| `button` | Domofon otwórz furtkę | off-hook → 0.8 s → DTMF "1" for 200 ms → on-hook after ~1 s |
+| `button` | Domofon otwórz furtkę | off-hook → pause (default 1 s) → DTMF sequence → on-hook (default 1 s after the tones) |
+| `text` | Brama - sekwencja DTMF | digits to dial (default `1`; `0-9 * # A-D`, comma = pause) |
+| `number` | Brama - czas … | pause before, tone length, inter-digit gap, pause after (defaults 1000 / 200 / 80 / 1000 ms) |
 | `switch` | Domofon off-hook | manual off-hook / on-hook (always off after reboot) |
 | `event` | Domofon DTMF | fired for every decoded digit (0–9, *, #, A–D) |
 | `text_sensor` | Domofon DTMF ostatnia cyfra | last decoded digit |
@@ -52,8 +54,7 @@ An interface that connects a classic **2-wire analog intercom handset line** (Po
 │   └── enclosure/               # 3D-printed wall box (CadQuery source, STL, 3MF, STEP, previews)
 ├── firmware/esphome/
 │   ├── domofon.yaml
-│   ├── secrets.yaml.example
-│   └── components/dtmf_decoder/ # custom component: ADC + Goertzel DTMF decoder
+│   └── secrets.yaml.example
 ├── cnc/                         # G-code, operator guide, CAM config & scripts
 │   ├── OPERATOR_GUIDE.md       # step-by-step for PrintNC + ioSender (PL)
 │   ├── README.md               # CAM overview (EN)
