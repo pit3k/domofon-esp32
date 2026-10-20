@@ -24,7 +24,7 @@ wifi:
   password: !secret wifi_password
 
 external_components:
-  - source: github://pit3k/esphome-dtmf-tone@195cb3a0ac66f388b909b73593824b0a1651a094
+  - source: github://pit3k/esphome-dtmf-tone@bfabc66f658b251451d672c5697a7d7f16cc7fd1
     components: [dtmf_tone]
   - source: github://pit3k/esphome-dtmf-decoder
     components: [dtmf_decoder]
