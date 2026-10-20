@@ -1,9 +1,9 @@
 Ref,Description,Value,Part number (TME) / source,Qty per board,Qty ordered,Source
 U1,"Ring detection optocoupler (AC input, anti-parallel LEDs), DIP4",LTV-814 (Liteon),LTV-814,1,10,TME
-K1,"PhotoMOS relay for off-hook, 60 V / 0.5 A, DIP4",AQY212GH (Panasonic),AQY212GH,1,1,TME
+K1,"PhotoMOS relay for off-hook, 400 V / 120 mA, DIP4 (rev. 5; was AQY212GH 60 V)",AQY214EH (Panasonic),AQY214EH (MPN AQY214EHT) https://www.tme.eu/en/details/aqy214eh/one-phase-solid-state-relays/panasonic/aqy214eht/,1,1,TME
 T1,"Line transformer 600:600 (1:1), 6.5 kV isolation, THT",LM-NP-1001-B1L (Bourns),LM-NP-1001-B1L,1,1,TME
 R5,"Off-hook load (choose 220-470R after measuring loop current)",330R 1 W metal film,MBE04140C3300FC100 (Vishay),1,2,TME
-D2,"Bidirectional TVS line protection, DO-15",P6KE36CA 36 V / 600 W,P6KE36CA-DIO (Diotec),1,2,TME
+D2,"Bidirectional TVS line protection, DO-15 (rev. 5; was P6KE36CA)",P6KE220CA 185 V VRWM / 600 W,P6KE220CA-DIO (Diotec) https://www.tme.eu/en/details/p6ke220ca-dio/bidirectional-tvs-tht-diodes/diotec-semiconductor/p6ke220ca/,1,2,TME
 "D4,D5","ADC input (GPIO1) clamp to 3V3/GND",BAT85 Schottky 30 V,BAT85S-TAP (Vishay),2,10,TME
 C1,"Ring detection filter (GPIO3-GND), electrolytic (+ to GPIO3)",10 uF / 25 V,ECEA1EKS100 (Panasonic),1,10,TME
 C4,"DTMF transmit coupling, bipolar (non-polarised) electrolytic",10 uF / 16 V NP,ECEA1CN100U (Panasonic),1,10,TME
@@ -11,7 +11,8 @@ R7,"DTMF transmit level trimmer (rheostat: wiper 2 tied to 3)",4k7,CA9V-4K7 (ACP
 X1,"Screw terminal for intercom line L1/L2, 2-pin, 2.54 mm pitch",XY308-2P green,XY308-2P-2.54-GN (Xinya),1,10,TME
 X2,"Screw terminal for 5V/GND supply (optional, instead of USB-C), 2-pin, 2.54 mm pitch",XY308-2P green,XY308-2P-2.54-GN (Xinya) - same pack as X1,1,0 (included in X1 qty),TME
 J1,"RJ11 6P4C jack, 1 port, right-angle THT - extra handset in parallel with the line (pins 2/3 = L1/L2)",MTJ-642BX2 (Adam Tech),MTJ-642BX2,1,1,TME
-"R1,R2","Series resistors for U1 LED (ring detection)",4k7 0.25 W,own stock,2,0,stock
+R1,"Series resistor for U1 LED (ring detection)",4k7 0.25 W,own stock,1,0,stock
+C8,"Ring-detect DC-blocking film cap, fitted in the R2 holes (PCB ref R2, 7.62 mm; 7.5 mm pitch or 5 mm with bent leads, body <=5 mm thick)",0.47 uF / 250 V (400 V better) MKT,own stock / e.g. Vishay MKT 468 7.5 mm,1,0,stock
 R3,"GPIO3 pull-up (optional)",10k 0.25 W,own stock,1,0,stock
 R4,"K1 LED resistor (GPIO4)",330R 0.25 W,own stock,1,0,stock
 "R6a,R6b","DTMF transmit RC filter (series, with C2/C3)",100R 0.25 W,own stock,2,0,stock
@@ -21,7 +22,7 @@ R9,"Series resistor before ADC (GPIO1)",2k2 0.25 W,own stock,1,0,stock
 "C2,C3","DTMF transmit RC filter (carrier 200 kHz), yellow box film cap, 5.08 mm pitch",220 nF (>=50 V),own stock,2,0,stock
 C7,"ADC anti-aliasing filter (fc ~4.2 kHz), film cap, 5.08 mm pitch",33 nF,own stock,1,0,stock
 C6,"DTMF receive coupling, film cap, 5.08 mm pitch",220 nF,own stock,1,0,stock
-C5,"Line-side coupling (blocks DC), film cap, 5.08 mm pitch",1 uF / 63 V (marking 105J63),own stock,1,0,stock
+C5,"Line-side coupling (blocks DC), film cap, 5.08 mm pitch (rev. 5; was 1 uF/63 V)",1 uF / 100 V MKT 7.2x7.2x13 mm,MKS2-1U/100-5%-R (WIMA MKS2D041001K00JO00) https://www.tme.eu/en/details/mks2-1u_100-5%25-r/tht-film-capacitors/wima/mks2d041001k00jo00/,1,1,TME
 JP1,"Wire jumper (insulated wire, component side, 17.78 mm)",-,own stock,1,0,stock
 MCU,"ESP32-C3 SuperMini (HW-466B) on female pin headers (parts sit under the module)",-,owned,1,0,stock
 PCB,"Single-sided copper-clad laminate (CNC-milled), ~55.6 x 46 mm",FR4 1.6 mm,own stock,1,0,stock

@@ -63,6 +63,14 @@ H = {"R0207_P7.62": 3.0, "R0207_P10.16": 3.0, "R0414_P15.24": 5.0, "DO34_P5.08":
      "XY308_2P": 10.0, "WIRE_P10.16": 2.5}
 
 data = json.loads((HERE / "board_components.json").read_text())
+# rev. 5 (line side for ES 201 970): parts taller/thicker than their PCB footprint outline.
+# C8 0.47 uF/250 V MKT sits in the R2 holes (PCB ref stays R2): standing box, max 3.2 mm thick (between R1 and X1).
+# C5 is now WIMA MKS2 1 uF/100 V: 7.2 x 7.2 x 13 mm on the 5.08 mm footprint.
+OVR = {"R2": dict(h=11.0, body=dict(type="rect", x0=38.0, y0=17.85, x1=48.0, y1=21.05)),
+       "C5": dict(h=13.0, body=dict(type="rect", x0=46.6, y0=33.9, x1=53.8, y1=41.1))}
+for _c in data["components"]:
+    if _c["ref"] in OVR:
+        _c["bodies"] = [OVR[_c["ref"]]["body"]]; _c["h"] = OVR[_c["ref"]]["h"]
 assert not data["board"]["mounting_holes"]
 
 def k2b(x, y):  # KiCad -> box XY
@@ -113,7 +121,7 @@ def pcb_assembly():
     for c in data["components"]:
         if c["fp"] == "ESP":
             continue
-        h = H.get(c["fp"], 5.0)
+        h = c.get("h", H.get(c["fp"], 5.0))
         solids = []
         for b in c["bodies"]:
             if b["type"] == "rect":

@@ -133,24 +133,24 @@ pinno(u1.collector, '4 (C)', dx=-0.15, halign='right')
 pinno(u1.emitter, '3 (E)', dx=-0.15, halign='right')
 pinno(u1.anode, '1', dx=0.45, halign='left')
 pinno(u1.cathode, '2', dx=0.45, halign='left')
-# strona linii: pin1 -> R1 -> R2 -> L1, pin2 -> L2
+# strona linii: pin1 -> R1 -> C8 (w otworach R2 na PCB) -> L1, pin2 -> L2 (tylko AC, 0 mA DC w spoczynku)
 wire(u1.anode, (29, u1.anode[1]))
 d.add(elm.Resistor().at((29, u1.anode[1])).right().label('R1 4k7 0,25W', fontsize=11))
-d.add(elm.Resistor().right().label('R2 4k7 0,25W', fontsize=11))
+d.add(elm.Capacitor().right().label('C8 0,47µF 250V MKT\n(pola R2 na PCB)', fontsize=10))
 wire((35, u1.anode[1]), (XL1, u1.anode[1]))
 dot((XL1, u1.anode[1]))
 wire(u1.cathode, (XL2, u1.cathode[1]))
 dot((XL2, u1.cathode[1]))
 
 # =====================================================================
-# Off-hook: GPIO4 (R4) -> R4 330R -> K1 (AQY212GH)
+# Off-hook: GPIO4 (R4) -> R4 330R -> K1 (AQY214EH)
 # =====================================================================
 k1 = d.add(elm.Ic(pins=[elm.IcPin(name='K', pin='2', side='left', anchorname='k'),
                         elm.IcPin(name='A', pin='1', side='left', anchorname='a'),
                         elm.IcPin(pin='3', side='right', anchorname='o3'),
                         elm.IcPin(pin='4', side='right', anchorname='o4')],
                   size=(2, 2), pinspacing=1).right().at((XI - 1, Y_HOOK - 1.5)))
-txt((XI, Y_HOOK + 1.1), 'K1 AQY212GH (PhotoMOS 60V, DIP4)', fontsize=12)
+txt((XI, Y_HOOK + 1.1), 'K1 AQY214EH (PhotoMOS 400V, DIP4)', fontsize=12)
 g4 = ESP['GPIO4']
 # GPIO4 lezy na plytce NAD GPIO3, a tor off-hook jest POD torem dzwonka -> jedno skrzyzowanie bez polaczenia
 wire(g4, (XA, g4[1]), (XA, Y_HOOK), (6, Y_HOOK))
@@ -212,7 +212,7 @@ pinno(t1.s2, '8', dx=0.2, halign='left')
 # wtorne: pin5 -> wezel H (rownolegle do R5), pin8 -> C5 -> L2
 wire(t1.s1, (XH, t1.s1[1]), (XH, k1.o3[1]))
 wire(t1.s2, (33, t1.s2[1]))
-d.add(elm.Capacitor().at((33, t1.s2[1])).right().label('C5 1µF folia r.5,08\n(≥100 V, lepiej 250 V)', fontsize=10))
+d.add(elm.Capacitor().at((33, t1.s2[1])).right().label('C5 1µF 100V MKT r.5,08\n(WIMA MKS2)', fontsize=10))
 wire((36, t1.s2[1]), (XL2, t1.s2[1]))
 dot((XL2, t1.s2[1]))
 
@@ -259,7 +259,7 @@ txt((XL1, YTOP + 0.5), 'L1', fontsize=12)
 txt((XL2, YTOP + 0.5), 'L2', fontsize=12)
 txt((44, YTOP + 1.6), 'X1 XY308-2P (r. 2,54 mm)\nLINIA DOMOFONU (2 żyły)', fontsize=11)
 dot((XL1, 11.5)); dot((XL2, 11.5))
-d.add(elm.DiodeTVS().at((XL1, 11.5)).to((XL2, 11.5)).label('D2 P6KE36CA', fontsize=11, loc='bottom'))
+d.add(elm.DiodeTVS().at((XL1, 11.5)).to((XL2, 11.5)).label('D2 P6KE220CA', fontsize=11, loc='bottom'))
 
 
 # =====================================================================

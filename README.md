@@ -10,7 +10,7 @@ An interface that connects a classic **2-wire analog intercom handset line** (Po
 
 ## Features
 - **Ring detection** — AC-input optocoupler (LTV-814) on the line, debounced input on GPIO3.
-- **Off-hook** — PhotoMOS relay (AQY212GH) connects a load resistor and a 600:600 line transformer, just like lifting the handset.
+- **Off-hook** — PhotoMOS relay (AQY214EH, 400 V) connects a load resistor and a 600:600 line transformer, just like lifting the handset.
 - **DTMF transmit** — sine PWM (external component [esphome-dtmf-tone](https://github.com/pit3k/esphome-dtmf-tone)) summed and filtered, coupled through the transformer. Any DTMF sequence; the default sends "1" to open the gate.
 - **DTMF receive (software)** — line audio via the transformer to ADC1 (GPIO1), decoded on the ESP with a Goertzel filter bank ([esphome-dtmf-decoder](https://github.com/pit3k/esphome-dtmf-decoder)). Works only while off-hook.
 - **Galvanic isolation** — ESP ground never touches the line; 4 mm isolation gap + milled slot on the PCB.
@@ -115,7 +115,7 @@ Do **not** mill `domofon-F_Cu-jumpers_DO_NOT_MILL.gtl` — solder jumper JP1 as 
 
 ## Safety
 - **Measure the line first**: idle voltage, ring voltage (DC and AC), off-hook voltage and loop current. Pick R5 to match the original handset's current (typically 20–60 mA).
-- Maximum line voltage must stay **below 60 V** (AQY212GH rating); the TVS D2 (36 V) must be above the normal working maximum. C5 on hand is rated 63 V.
+- Line side is rated for ETSI ES 201 970 / TBR21 ringing (up to 100 Vrms on DC; measured idle 42 V DC): K1 AQY214EH 400 V, TVS D2 P6KE220CA (VRWM 185 V), C5 1 µF/100 V, ring-detect DC-blocking C8 0.47 µF/250 V fitted in the R2 holes. On-hook the device draws **no DC** (otherwise the exchange sees the line off-hook). Details: [design notes](docs/design-notes.md).
 - **Never connect the ESP ground to the intercom line.** Power the ESP from an isolated 5 V USB supply.
 - Test on a bench supply through a resistor before connecting to the building installation.
 - The intercom is part of the building installation — get the administrator's consent.
@@ -126,4 +126,6 @@ Vendor datasheets are not included in the repo; see e.g.
 [Adam Tech MTJ-642BX2](https://app.adam-tech.com/products/download/data_sheet/203851/mtj-642bx2-data-sheet.pdf),
 [Bourns LM-NP-1001-B1L](https://www.tme.eu/pl/details/lm-np-1001-b1l/dlawiki/bourns/),
 [Liteon LTV-814](https://www.tme.eu/pl/details/ltv-814/transoptory-wyjscie-tranzystorowe/liteon/),
-[Panasonic AQY212GH](https://www.tme.eu/pl/details/aqy212gh/przekazniki-polprzewodnikowe/panasonic/).
+[Panasonic AQY214EH](https://www.tme.eu/en/details/aqy214eh/one-phase-solid-state-relays/panasonic/aqy214eht/),
+[Diotec P6KE220CA](https://www.tme.eu/en/details/p6ke220ca-dio/bidirectional-tvs-tht-diodes/diotec-semiconductor/p6ke220ca/),
+[WIMA MKS2 1 µF/100 V](https://www.tme.eu/en/details/mks2-1u_100-5%25-r/tht-film-capacitors/wima/mks2d041001k00jo00/).
