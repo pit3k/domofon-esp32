@@ -110,7 +110,7 @@ Xc = 1/(2π·25·0,47 µF) ≈ 13,55 kΩ; |Z| = √(13,55² + 4,7²) ≈ 14,34 k
 - D2 P6KE220CA: L1–L2 (transil dwukierunkowy, VRWM 185 V – powyżej DC + szczytu dzwonka)
 - Dzwonek: L1 → C8 0,47µF/250V MKT → R1 4k7 0,25W → U1.1 (LED, antyrównoległe) ; U1.2 → L2
 - Off-hook: L1 → K1.4 ; K1.3 → **H** ; H → R5 330R 1W (MBE04140C3300FC100) → L2
-- DTMF: H → T1.5 ; T1.8 → C5 1µF/100V MKT (WIMA MKS2) → L2  (sygnał wstrzykiwany równolegle do R5, tylko gdy K1 zwarty; C5 blokuje DC przez uzwojenie)
+- DTMF: H → T1.8 ; T1.5 → C5 1µF/100V MKT (WIMA MKS2) → L2  (sygnał wstrzykiwany równolegle do R5, tylko gdy K1 zwarty; C5 blokuje DC przez uzwojenie)
 
 ### Strona ESP (GND ESP)
 - U1.4 (kolektor) → GPIO3 [R5] ; U1.3 (emiter) → GND [R2] ; R3 10k GPIO3–3V3 (opc.) ; C1 10µF/25V ECEA1EKS100 GPIO3–GND (+ do GPIO3)

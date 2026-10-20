@@ -207,9 +207,9 @@ wire(t1.p2, (t1.p2[0] - 1.5, t1.p2[1]))
 gnd((t1.p2[0] - 1.5, t1.p2[1]))
 pinno(t1.p1, '1', dx=-0.2, halign='right')
 pinno(t1.p2, '4', dx=-0.2, halign='right')
-pinno(t1.s1, '5', dx=0.2, halign='left')
-pinno(t1.s2, '8', dx=0.2, halign='left')
-# wtorne: pin5 -> wezel H (rownolegle do R5), pin8 -> C5 -> L2
+pinno(t1.s1, '8', dx=0.2, halign='left')
+pinno(t1.s2, '5', dx=0.2, halign='left')
+# wtorne (zgodnie z PCB): pin8 -> wezel H (rownolegle do R5), pin5 -> C5 -> L2
 wire(t1.s1, (XH, t1.s1[1]), (XH, k1.o3[1]))
 wire(t1.s2, (33, t1.s2[1]))
 d.add(elm.Capacitor().at((33, t1.s2[1])).right().label('C5 1µF 100V MKT r.5,08\n(WIMA MKS2)', fontsize=10))
