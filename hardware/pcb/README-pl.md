@@ -1,6 +1,7 @@
 # Domofon – PCB jednostronna (THT), do frezowania V-frezem 30°/0,2 mm
 
 - Płytka: 55,5 x 45,9 mm (zaokrąglone narożniki R1), miedź tylko B.Cu, elementy od góry.
+- Rew. 5: C8 (0,47 µF/250 V MKT, footprint CFILM_P7.62) zajmuje dokładnie pady/otwory dawnego R2 – miedź, otwory i G-code bez zmian; zmienione tylko opisy (silkscreen/Fab: C8, AQY214EH, P6KE220CA, 1u/100V).
 - Zworki: 1 (JP1, GND, drut izolowany od strony elementów, rozstaw 17,78 mm, wzdłuż lewej krawędzi C1).
   W KiCad zworka jest narysowana jako ścieżka na F.Cu tylko po to, żeby DRC widział połączenie –
   warstwy F.Cu NIE frezować (gerbers/domofon-F_Cu-jumpers_DO_NOT_MILL.gtl).

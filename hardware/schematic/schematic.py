@@ -133,10 +133,10 @@ pinno(u1.collector, '4 (C)', dx=-0.15, halign='right')
 pinno(u1.emitter, '3 (E)', dx=-0.15, halign='right')
 pinno(u1.anode, '1', dx=0.45, halign='left')
 pinno(u1.cathode, '2', dx=0.45, halign='left')
-# strona linii: pin1 -> R1 -> C8 (w otworach R2 na PCB) -> L1, pin2 -> L2 (tylko AC, 0 mA DC w spoczynku)
+# strona linii: pin1 -> R1 -> C8 -> L1, pin2 -> L2 (tylko AC, 0 mA DC w spoczynku)
 wire(u1.anode, (29, u1.anode[1]))
 d.add(elm.Resistor().at((29, u1.anode[1])).right().label('R1 4k7 0,25W', fontsize=11))
-d.add(elm.Capacitor().right().label('C8 0,47µF 250V MKT\n(pola R2 na PCB)', fontsize=10))
+d.add(elm.Capacitor().right().label('C8 0,47µF 250V MKT', fontsize=11))
 wire((35, u1.anode[1]), (XL1, u1.anode[1]))
 dot((XL1, u1.anode[1]))
 wire(u1.cathode, (XL2, u1.cathode[1]))
@@ -302,7 +302,7 @@ txt((21, -14.6),
 if __name__ == '__main__':
     here = os.path.dirname(os.path.abspath(__file__))
     d.save(os.path.join(here, 'schematic.svg'))
-    d.save(os.path.join(here, 'schematic.png'), dpi=200)
+    d.save(os.path.join(here, 'schematic.png'), dpi=110)  # ~3200 px wide
     print('OK: schematic.svg, schematic.png')
 
 # --- wymuszenie bialego tla (PNG i SVG) ---

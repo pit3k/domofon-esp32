@@ -58,15 +58,15 @@ P = dict(
     lip_h=2.0, lip_t=1.2,
 )
 # component heights above PCB top (mm), simplified bodies
-H = {"R0207_P7.62": 3.0, "R0207_P10.16": 3.0, "R0414_P15.24": 5.0, "DO34_P5.08": 2.2, "DO15_P5.08_V": 11.5,
+H = {"R0207_P7.62": 3.0, "R0207_P10.16": 3.0, "CFILM_P7.62": 11.0, "R0414_P15.24": 5.0, "DO34_P5.08": 2.2, "DO15_P5.08_V": 11.5,
      "CFILM_P5.08": 10.0, "CP_D5_P2.0": 12.0, "CA9V": 6.5, "DIP4": 4.5, "T1": 11.0, "MTJ642": 14.5,
      "XY308_2P": 10.0, "WIRE_P10.16": 2.5}
 
 data = json.loads((HERE / "board_components.json").read_text())
 # rev. 5 (line side for ES 201 970): parts taller/thicker than their PCB footprint outline.
-# C8 0.47 uF/250 V MKT sits in the R2 holes (PCB ref stays R2): standing box, max 3.2 mm thick (between R1 and X1).
+# C8 0.47 uF/250 V MKT (footprint CFILM_P7.62, same holes as the former R2): standing box, max 3.2 mm thick (between R1 and X1).
 # C5 is now WIMA MKS2 1 uF/100 V: 7.2 x 7.2 x 13 mm on the 5.08 mm footprint.
-OVR = {"R2": dict(h=11.0, body=dict(type="rect", x0=38.0, y0=17.85, x1=48.0, y1=21.05)),
+OVR = {"C8": dict(h=11.0, body=dict(type="rect", x0=38.0, y0=17.85, x1=48.0, y1=21.05)),
        "C5": dict(h=13.0, body=dict(type="rect", x0=46.6, y0=33.9, x1=53.8, y1=41.1))}
 for _c in data["components"]:
     if _c["ref"] in OVR:

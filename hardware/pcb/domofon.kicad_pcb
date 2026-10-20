@@ -80,7 +80,7 @@
 	(net 0 "")
 	(net 1 "L1")
 	(net 2 "L2")
-	(net 3 "N_R12")
+	(net 3 "N_C8R1")
 	(net 4 "N_U1A")
 	(net 5 "H")
 	(net 6 "N_T1C5")
@@ -1400,11 +1400,11 @@
 		)
 		(embedded_fonts no)
 	)
-	(footprint "domofon:R0207_P7.62"
+	(footprint "domofon:CFILM_P7.62"
 		(layer "F.Cu")
 		(uuid "2ab2814e-d200-43e8-a0a5-4df40d3d2871")
 		(at 43 19.2)
-		(property "Reference" "R2"
+		(property "Reference" "C8"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(uuid "0426a9eb-9da8-4c79-9111-937b7046adb0")
@@ -1415,7 +1415,7 @@
 				)
 			)
 		)
-		(property "Value" "4k7"
+		(property "Value" "470n/250V"
 			(at 0 1.2 0)
 			(layer "F.Fab")
 			(uuid "45502019-5c1f-4855-869d-7b70e0ebbaa0")
@@ -1546,7 +1546,7 @@
 			(drill 0.8)
 			(layers "B.Cu" "B.Mask")
 			(remove_unused_layers no)
-			(net 3 "N_R12")
+			(net 3 "N_C8R1")
 			(uuid "d3b568c9-e020-4656-a902-65482359ac91")
 		)
 		(embedded_fonts no)
@@ -2315,7 +2315,7 @@
 				)
 			)
 		)
-		(property "Value" "1u/63V"
+		(property "Value" "1u/100V"
 			(at 0 1.2 0)
 			(layer "F.Fab")
 			(uuid "e291dae4-1e54-45df-b4dd-82074a9598c3")
@@ -3664,7 +3664,7 @@
 				)
 			)
 		)
-		(property "Value" "AQY212GH"
+		(property "Value" "AQY214EH"
 			(at 0 1.2 0)
 			(layer "F.Fab")
 			(uuid "2e255c7a-2ef8-4c26-b647-44e62f6ea41f")
@@ -4321,7 +4321,7 @@
 				)
 			)
 		)
-		(property "Value" "P6KE36CA"
+		(property "Value" "P6KE220CA"
 			(at 0 1.2 0)
 			(layer "F.Fab")
 			(uuid "ace2c69e-903d-4e32-8a25-b7995427ecc1")
@@ -4536,7 +4536,7 @@
 			(drill 0.8)
 			(layers "B.Cu" "B.Mask")
 			(remove_unused_layers no)
-			(net 3 "N_R12")
+			(net 3 "N_C8R1")
 			(uuid "58f931a0-8806-4a76-804a-7adbc453f133")
 		)
 		(pad "2" thru_hole circle

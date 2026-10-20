@@ -30,6 +30,8 @@ def r_lying(p, pad=1.9, drill=0.8, body=(3.2,1.15)):
                 body=[(-body[0],-body[1],body[0],body[1])], pin1mark=None)
 FP['R0207_P7.62'] = r_lying(7.62)
 FP['R0207_P10.16'] = r_lying(10.16)
+# C8 0.47uF/250V MKT in the former R2 holes: identical pads/drills to R0207_P7.62 (copper unchanged); 7.5 mm pitch box
+FP['CFILM_P7.62'] = r_lying(7.62)
 # Vishay MBE0414 1W: body d=4, L=11.5 -> 15.24 pitch
 FP['R0414_P15.24'] = r_lying(15.24, pad=2.4, drill=1.2, body=(5.9,2.1))
 # DO-15 lying 12.7 pitch (P6KE)

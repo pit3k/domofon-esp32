@@ -1,4 +1,4 @@
-# Interfejs domofonu analogowego -> ESP32-C3 / ESPHome (wersja 4 – części wg zamówienia TME, gniazdo J1 na dodatkowy telefon)
+# Interfejs domofonu analogowego -> ESP32-C3 / ESPHome (wersja 5 – strona linii pod ES 201 970: D2 P6KE220CA, C8 zamiast R2, K1 AQY214EH, C5 100 V)
 
 MCU: **ESP32-C3 SuperMini (HW-466B)**, ESPHome board `esp32-c3-devkitm-1`.
 Schemat graficzny: [`hardware/schematic/schematic.svg`](../hardware/schematic/schematic.svg) / `schematic.png` (generowany z `hardware/schematic/schematic.py`).
@@ -50,7 +50,7 @@ Na schemacie: GPIO4 (R4) leży na płytce nad GPIO3 (R5), a tor off-hook jest na
 | Element | Piny | Źródło |
 |---|---|---|
 | U1 LTV-814 (DIP4) | 1 = anoda/katoda, 2 = katoda/anoda (diody antyrównoległe), 3 = emiter, 4 = kolektor | karta Liteon LTV-814/824/844, „Pin No. and internal connection diagram” |
-| K1 AQY214EH (DIP4) | 1 = anoda LED, 2 = katoda LED, 3 i 4 = wyjście MOSFET (AC/DC, zamienne) | karta Panasonic PhotoMOS AQY21□EH (DIP4 1 Form A; ten sam pinout co AQY212GH) |
+| K1 AQY214EH (DIP4) | 1 = anoda LED, 2 = katoda LED, 3 i 4 = wyjście MOSFET (AC/DC, zamienne) | karta Panasonic PhotoMOS AQY21□EH (DIP4 1 Form A) |
 | T1 LM-NP-1001-B1L | uzwojenie A: piny **1–4**, uzwojenie B: piny **5–8** (widok od spodu, pin 1 przy białym znaczniku/ściętym rogu; obsadzone tylko 1, 4, 5, 8). Uzwojenia identyczne – dowolne pierwotne/wtórne. Na schemacie: strona ESP 1–4, strona linii 5–8 | karta Bourns LM-NP/-LP 1000 Series, „Pin Assignment and Winding Configurations (Bottom View)” |
 | R7 trymer 4k7 | 1 = koniec, 2 = suwak, 3 = koniec; jako reostat: 2 zwarty z 3 | konwencja |
 | X1 XY308-2P (Xinya, raster 2,54 mm) | 1 = L1, 2 = L2 | – |
@@ -58,18 +58,18 @@ Na schemacie: GPIO4 (R4) leży na płytce nad GPIO3 (R5), a tor off-hook jest na
 | J1 MTJ-642BX2 (Adam Tech, RJ11 6P4C, 1 port, kątowe THT) | piny PCB 1–4 = styki wtyku 6P nr 2–5; **2 = L1, 3 = L2** (środkowa para = linia telefoniczna), 1 i 4 NC | karta Adam Tech MTJ-642BX2 rev. C (front: „4 3 2 1”, recommended PCB layout) |
 
 ## Części wg zamówienia (TME) i zapasów
-Pełna lista: `hardware/bom/bom.csv` (zamówienie TME: `hardware/bom/tme-order.csv`). Z TME: U1 LTV-814, K1 AQY214EH, T1 LM-NP-1001-B1L, R5 MBE04140C3300FC100 (330R 1W), D2 P6KE220CA-DIO, C5 MKS2-1U/100-5%-R (WIMA 1µF/100V), D4/D5 BAT85S-TAP, C1 ECEA1EKS100 (10µF/25V), C4 ECEA1CN100U (10µF/16V NP), R7 CA9V-4K7, X1/X2 XY308-2P-2.54-GN, J1 MTJ-642BX2.
+Pełna lista: `hardware/bom/bom.csv` (pierwotne zamówienie TME, historia sprzed rew. 5: `hardware/bom/tme-order.csv`). Z TME: U1 LTV-814, K1 AQY214EH, T1 LM-NP-1001-B1L, R5 MBE04140C3300FC100 (330R 1W), D2 P6KE220CA-DIO, C5 MKS2-1U/100-5%-R (WIMA 1µF/100V), D4/D5 BAT85S-TAP, C1 ECEA1EKS100 (10µF/25V), C4 ECEA1CN100U (10µF/16V NP), R7 CA9V-4K7, X1/X2 XY308-2P-2.54-GN, J1 MTJ-642BX2.
 Z zapasów: wszystkie rezystory 0,25 W (także R1), kondensatory foliowe C2/C3 220nF, C7 33nF, C6 220nF (żółte prostopadłościenne, raster 5,08 mm = co 2 otwory płytki uniwersalnej), płytka uniwersalna.
-- **C8** 0,47 µF / 250–400 V MKT (w otworach R2) – kondensator posiadany/dokupiony, raster 7,5 mm lub 5 mm z odgiętymi nóżkami.
+- **C8** 0,47 µF / 250–400 V MKT – kondensator posiadany/dokupiony, raster 7,5 mm (pola 7,62 mm) lub 5 mm z odgiętymi nóżkami; korpus stojący ≤ ~3,2 mm grubości między R1 a X1 (albo pochylony nad R1).
 - **R1 4k7 0,25 W**: przy dzwonku 100 Vrms 0,228 W (obliczenia w sekcji „Napięcia linii”).
 
 
 ## Napięcia linii i dobór elementów strony linii (rewizja 5)
 - **Pomiar u Piotra:** 42 V DC w spoczynku (słuchawka odłożona).
 - **ETSI ES 201 970 / TBR21:** dzwonienie do **100 Vrms** (25 Hz, współczynnik szczytu 1,2–1,6) nałożone na napięcie DC; próba TBR21: 90 Vrms na 60 V DC. Szczyt: 100·1,6 + 60…78 V ≈ **220–240 V**. Urządzenie w stanie spoczynku **nie może pobierać prądu DC** (TBR21: < 0,6 mA podczas dzwonienia) – inaczej centralka widzi „podniesioną słuchawkę”.
-- **Przyczyna błędu rew. 4:** D2 P6KE36CA (VRWM ≈ 31 V) przewodził już przy 42 V, a tor R1+R2+U1 pobierał ~4,4 mA DC → centralka sygnalizowała zajętą linię.
+- **Przyczyna błędu rew. 4:** D2 P6KE36CA (VRWM ≈ 31 V) przewodził już przy 42 V, a tor R1+R2 (2×4k7)+U1 pobierał ~4,4 mA DC → centralka sygnalizowała zajętą linię.
 - **D2 → P6KE220CA** (DO-15, ten sam footprint): VRWM ≈ 185 V, VBR 209–231 V, Vc 388 V @ Ipp – nie przewodzi przy 42 V DC ani przy typowym dzwonku (42 V + 75 Vrms·1,41 ≈ 150 V), ogranicza przepięcia. Zadziała dopiero przy skrajnym dzwonku z normy – to zamierzone (ochrona K1 400 V i C8).
-- **R2 → C8 0,47 µF / 250 V (lepiej 400 V) MKT** wlutowany **w otwory R2** (footprint R0207, raster 7,62 mm – pasuje kondensator 7,5 mm lub 5 mm z odgiętymi nóżkami; korpus ≤ ~5 mm grubości, bo obok leży R1). Na PCB/gerberach oznaczenie pozostaje „R2” – gerbery i G-code bez zmian. C8 blokuje DC: **prąd spoczynkowy = 0**.
+- **Dawny R2 4k7 → C8 0,47 µF / 250 V (lepiej 400 V) MKT.** Na PCB footprint `CFILM_P7.62` ma te same pady/otwory co dawny R2 (raster 7,62 mm) – miedź, otwory i G-code bez zmian, zmienił się tylko opis (silkscreen/Fab). Pasuje kondensator 7,5 mm lub 5 mm z odgiętymi nóżkami. C8 blokuje DC: **prąd spoczynkowy = 0**.
 - **K1 → AQY214EH** (Panasonic, DIP4, 400 V / 120 mA, Ron 25–35 Ω; pinout identyczny: 1 = A, 2 = K, 3/4 = wyjście). AQY212GH (60 V) nie przeżyłby dzwonka.
 - **C5 → 1 µF / 100 V MKT** (WIMA MKS2D041001K00JO00, raster 5 mm, korpus 7,2×7,2×13 mm). C5 widzi napięcie linii tylko przy zwartym K1 (6–15 V) + skok przy zamknięciu (≤ 78 V). Pojemność bez zmian → tor DTMF TX bez zmian (Xc ≈ 228 Ω @ 697 Hz).
 
@@ -108,7 +108,7 @@ Xc = 1/(2π·25·0,47 µF) ≈ 13,55 kΩ; |Z| = √(13,55² + 4,7²) ≈ 14,34 k
 - X1.1 = **L1**, X1.2 = **L2**
 - **J1 (dodatkowy telefon): J1.2 = L1, J1.3 = L2** (równolegle do X1 i D2), J1.1, J1.4 – NC
 - D2 P6KE220CA: L1–L2 (transil dwukierunkowy, VRWM 185 V – powyżej DC + szczytu dzwonka)
-- Dzwonek: L1 → C8 0,47µF/250V MKT (w otworach R2) → R1 4k7 0,25W → U1.1 (LED, antyrównoległe) ; U1.2 → L2
+- Dzwonek: L1 → C8 0,47µF/250V MKT → R1 4k7 0,25W → U1.1 (LED, antyrównoległe) ; U1.2 → L2
 - Off-hook: L1 → K1.4 ; K1.3 → **H** ; H → R5 330R 1W (MBE04140C3300FC100) → L2
 - DTMF: H → T1.5 ; T1.8 → C5 1µF/100V MKT (WIMA MKS2) → L2  (sygnał wstrzykiwany równolegle do R5, tylko gdy K1 zwarty; C5 blokuje DC przez uzwojenie)
 

@@ -50,7 +50,7 @@ An interface that connects a classic **2-wire analog intercom handset line** (Po
 │   │   └── scripts/             # Python/KiCad generators, autorouting, DRC, export
 │   ├── bom/
 │   │   ├── bom.csv              # full bill of materials
-│   │   └── tme-order.csv        # the actual TME order
+│   │   └── tme-order.csv        # original TME order (history, pre rev. 5)
 │   └── enclosure/               # 3D-printed wall box (CadQuery source, STL, 3MF, STEP, previews)
 ├── firmware/esphome/
 │   ├── domofon.yaml
@@ -115,7 +115,7 @@ Do **not** mill `domofon-F_Cu-jumpers_DO_NOT_MILL.gtl` — solder jumper JP1 as 
 
 ## Safety
 - **Measure the line first**: idle voltage, ring voltage (DC and AC), off-hook voltage and loop current. Pick R5 to match the original handset's current (typically 20–60 mA).
-- Line side is rated for ETSI ES 201 970 / TBR21 ringing (up to 100 Vrms on DC; measured idle 42 V DC): K1 AQY214EH 400 V, TVS D2 P6KE220CA (VRWM 185 V), C5 1 µF/100 V, ring-detect DC-blocking C8 0.47 µF/250 V fitted in the R2 holes. On-hook the device draws **no DC** (otherwise the exchange sees the line off-hook). Details: [design notes](docs/design-notes.md).
+- Line side is rated for ETSI ES 201 970 / TBR21 ringing (up to 100 Vrms on DC; measured idle 42 V DC): K1 AQY214EH 400 V, TVS D2 P6KE220CA (VRWM 185 V), C5 1 µF/100 V, ring-detect DC-blocking C8 0.47 µF/250 V (replaces the former 4k7 R2, same holes). On-hook the device draws **no DC** (otherwise the exchange sees the line off-hook). Details: [design notes](docs/design-notes.md).
 - **Never connect the ESP ground to the intercom line.** Power the ESP from an isolated 5 V USB supply.
 - Test on a bench supply through a resistor before connecting to the building installation.
 - The intercom is part of the building installation — get the administrator's consent.
