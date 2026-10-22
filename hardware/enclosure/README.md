@@ -1,17 +1,18 @@
-# 3D-printed enclosure — domofon-esp32
+# 3D-printed enclosure — domofon-esp32 (layout v7)
 
-Flat wall-mounted box made of two printed parts: a **base** that is glued to the wall and a **lid** held by 4 screws.
-The design is parametric (CadQuery). All dimensions live in `source/enclosure.py`, in the `P` dict at the top of the file.
+Flat, square wall box made of two printed parts: a **base** glued to the wall and a **lid** held by 3 countersunk M3 screws in brass heat-set inserts.
+The design is parametric (CadQuery). All dimensions are in `source/enclosure.py`, in the `P` dict at the top of the file.
 
 | | |
 |---|---|
-| Outer size | **83.5 × 62.8 × 26.9 mm** (W × H × depth from the wall) |
-| Walls / back / lid | 2.0 mm |
-| PCB | 55.5 × 45.9 mm, mounted with the **J1 RJ11 opening facing down** |
-| PCB fixing | no mounting holes on the PCB, so it sits on 11 ledges 3.5 mm above the back plate. Guides, the screw bosses and the top wall hold it sideways; 4 pins on the lid press it down |
-| Cable exits (bottom) | RJ11 slot (J1, plug inserted from below) and USB-C cable slot with a strain-relief tongue on the lid |
-| Phone cable from the wall | Ø12 hole in the back plate (hidden behind the box), slack space in the right-hand cable bay |
-| Extras | screwdriver hole above trimmer R7, vent slots in the lid, cable-tie anchor next to the USB exit |
+| Outer size | **68 × 68 × 26 mm** (W × H × depth from the wall) |
+| Walls / back / lid | 2.0 / 2.0 / 3.0 mm, top wall 1.39 mm |
+| PCB | 55.5 × 45.9 mm, **flipped: components face the wall**, solder side faces the lid |
+| Orientation (looking toward the wall) | **RJ11 (J1) exits through the left wall**, **USB-C points up** |
+| USB-C | socket axis **5.0 mm from the wall**. The mouth sits 2.38 mm below the top surface. The overmold sits in a **13 × 8 mm pocket** (R2, 1.98 mm deep), with a **9.25 × 3.4 mm obround** opening (R1.7) in the pocket floor. The plug goes **6.2 mm** into the socket |
+| Phone cable from the wall | Ø12 hole in the back plate, centre **16 mm from the left edge, 10.5 mm from the bottom edge** (seen from the room). It sits in the strip under the PCB |
+| Screws | 3 × M3×10 countersunk (ISO 10642 / DIN 7991) + 3 × brass M3 heat-set inserts Ø4 × 4 mm, posts Ø7.5 at (6;6), (62;6), (62;62) |
+| PCB fixing | the board rests on 4 round supports from the back plate plus 4 edge ledges. It is held sideways by the top/left walls and 4 guide ribs. 4 pins on the lid press the solder side. Supports and pins are coaxial and avoid all component bodies and pads |
 
 ![inside](previews/assembly_inside_no_lid.png)
 
@@ -20,14 +21,14 @@ The design is parametric (CadQuery). All dimensions live in `source/enclosure.py
 hardware/enclosure/
 ├── source/
 │   ├── enclosure.py                 # CadQuery model + interference check + exports
-│   ├── render_previews.py           # PNG previews (pyvista)
+│   ├── render_previews.py           # PNG previews (pyvista, white background)
 │   ├── export_board_components.py   # PCB → board_components.json (system python + KiCad pcbnew)
 │   └── board_components.json        # component bodies / positions exported from the PCB
 ├── stl/    enclosure_base.stl, enclosure_lid.stl          (already in print orientation)
 ├── 3mf/    enclosure_base.3mf, enclosure_lid.3mf, enclosure_plate_base_and_lid.3mf
 ├── step/   enclosure_base.step, enclosure_lid.step, enclosure_assembly_with_pcb.step
-└── previews/  assembly_front.png, assembly_inside_no_lid.png, exploded.png,
-               bottom_view_cable_exits.png, back_view_wall_hole.png, front_view.png
+└── previews/  assembly_front.png, assembly_inside_no_lid.png, base_only.png, exploded.png,
+               top_view_usb_pocket.png, back_view_wall_hole.png, front_view.png
 ```
 
 Regenerate:
@@ -38,61 +39,50 @@ python3 -m venv .venv-cad && .venv-cad/bin/pip install cadquery trimesh networkx
 .venv-cad/bin/python hardware/enclosure/source/render_previews.py
 ```
 
-## Coordinates and key positions
-Front view, X measured from the **outer left edge** of the box:
-- RJ11 J1 slot centre: **X = 47.4 mm**. The slot is 12.8 mm wide.
-- USB-C cable exit centre: **X = 65.5 mm**, **7 mm from the wall**. It sits inside a 10 mm deep cable duct.
-- Suggested duct centre for a 20 × 10 mm duct: **X ≈ 56.5 mm**. The `duct_w`/`duct_h` parameters only affect the preview.
-  The USB cable falls straight into the duct. The RJ11 cable leaves the plug ~14 mm from the wall and must bend towards the duct below the box.
-- Phone cable hole in the back: Ø12 mm, centre **68.4 mm from the outer left edge** and **11.8 mm below the outer top edge**.
+## Coordinates
+- **Frame:** looking toward the wall. X points right, Y up, Z out of the wall. The origin is the outer lower-left corner.
+- **PCB position:** X 2.30–57.80, Y 20.41–66.31. Component face at Z = 18.6, solder face at Z = 20.1.
+- **USB-C axis:** X = 46.1, Z = 5.0.
+- **RJ11 slot:** centre Y = 58.3, width 12.8, Z from 3.6 up to the lid.
+- **Wall-cable hole:** (16; 10.5) as seen from the room. Seen from the wall side it is mirrored, at 52 mm from that side's left edge.
 
 ---
 
 ## Instrukcja (PL)
 
-### Druk (Bambu Lab P1S/P2S, Bambu Studio)
-- Pliki `3mf/`:
-  - `enclosure_plate_base_and_lid.3mf` – obie części na jednym stole;
-  - albo osobno: `enclosure_base.3mf`, `enclosure_lid.3mf`.
+### Druk (Bambu Lab P2S, Bambu Studio)
+- Pliki `3mf/`: `enclosure_plate_base_and_lid.3mf` (obie części na jednym stole) albo osobno.
 - Orientacja jest już ustawiona:
-  - **baza** leży tylną ścianką na stole;
-  - **pokrywa** leży frontem na stole, a kołki dociskowe i krawędź centrująca są skierowane do góry.
-- **Podpory: wyłączone** (nie są potrzebne).
+  - **baza** leży tylną ścianką (stroną przyklejaną do ściany) na stole;
+  - **pokrywa** leży frontem na stole, a kołki i krawędź centrująca są skierowane do góry. Stożki pod łby śrub rozszerzają się w stronę stołu, co daje nawis 45° – drukuje się bez podpór.
+- **Podpory: wyłączone.** Kieszeń USB, owalny otwór i szczelina RJ11 drukują się jako krótkie mostki.
 - Materiał:
-  - **PETG** – lepszy przy ścianie nasłonecznionej lub ciepłej;
+  - **PETG** – lepszy przy ciepłej ścianie;
   - **PLA** – wystarczy w mieszkaniu.
-- Warstwa 0,2 mm, 3 obrysy (ścianki), wypełnienie 15–20 % gyroid, góra i dół po 4 warstwy.
-- Tolerancje w modelu:
-  - 0,3 mm luzu PCB ↔ prowadnice;
-  - 0,25 mm luzu krawędzi pokrywy w bazie;
-  - kołki pokrywy 0,1 mm nad PCB.
-  Jeśli pokrywa wchodzi za ciasno, zmniejsz kompensację XY otworów albo zwiększ `clr` w `enclosure.py`.
+- Ustawienia: warstwa 0,2 mm, 3–4 obrysy (słupki pod wtopki muszą mieć pełne ścianki), wypełnienie 20 % gyroid.
 
 ### Do kupienia
-- **4 × wkręt samogwintujący do tworzyw 2,5 × 10 mm** z łbem walcowym lub soczewkowym Ø ≤ 5,5 mm (np. typ PT / WN1411 K25×10, albo zwykły wkręt do plastiku 2,5×10). Otwór pilotowy w słupku: Ø2,1 mm.
-  - Alternatywa: wkładki M3 wtapiane + śruby M3×8. Ustaw wtedy `screw_pilot=4.0` i `screw_clear=3.4`.
-- Taśma dwustronna montażowa (piankowa, np. 3M VHB 19 mm): 2–3 paski na tylnej ściance, omijając otwór na kabel.
-- Ewentualnie 1 opaska zaciskowa 2,5 mm (kotwa przy wyjściu USB).
+- **3 × śruba M3×10 z łbem stożkowym** (ISO 10642 / DIN 7991, imbus).
+- **3 × wkładka mosiężna M3 do wtapiania, Ø4 × 4 mm** (otwór w słupku Ø4,0, głębokość 10 mm).
+- Taśma dwustronna montażowa (np. 3M VHB): paski na tylnej ściance, omijając otwór na kabel.
+
+### Wtapianie wkładek
+1. Lutownica 220–230 °C (PLA) lub 245–260 °C (PETG), najlepiej z końcówką do wtopek.
+2. Postaw wkładkę prosto na otworze słupka i wciśnij ją bez nacisku bocznego, aż będzie równo z górą słupka (lub 0,2 mm niżej).
+3. Od razu dociśnij płaskim przedmiotem, żeby się nie przekrzywiła. Odczekaj, aż ostygnie.
+- Śruba M3×10 przechodzi przez 3 mm pokrywy, potem przez 4 mm wkładki i jeszcze 3 mm w otwór pod nią.
 
 ### Składanie
-1. Przeciągnij kabel telefoniczny ze ściany przez otwór w tylnej ściance bazy.
-2. Przyklej bazę do ściany (wcześniej odtłuść ścianę). Otwór Ø12 musi trafić na wyjście kabla.
-3. Zostaw zapas kabla w prawej komorze. Żyły poprowadź kanałem pod dolną krawędzią płytki (od strony ściany, pod gniazdem J1) do zacisków **X1** (wejście przewodów od dołu).
-4. Wsuń płytkę elementami do przodu, J1 w dół. Płytka leży na półkach 3,5 mm nad dnem.
-5. Podłącz przewody do X1. Włóż ESP32 w listwy, wepnij USB-C, poprowadź kabel łukiem w dół i włóż go w szczelinę w dolnej ściance (szczelina jest otwarta od strony pokrywy). Opcjonalnie przypnij kabel opaską do kotwy.
-6. Załóż pokrywę: języczek dociśnie kabel USB, kołki dociśną płytkę. Przykręć 4 wkręty, z wyczuciem.
-7. Trymer R7 reguluje się śrubokrętem przez otwór w pokrywie.
-8. Wtyk RJ11 dodatkowego telefonu wkładasz od dołu w szczelinę. Zatrzask jest od strony pokrywy i da się go wcisnąć paznokciem lub cienkim śrubokrętem przez szczelinę.
+1. **Trymer R7 ustaw przed montażem.** Po zamknięciu jest od strony ściany i nie ma do niego dostępu.
+2. Przeciągnij kabel ze ściany przez otwór Ø12 i przyklej bazę do ściany. Otwór jest w lewym dolnym rogu (patrząc na ścianę).
+3. Żyły doprowadź do zacisków **X1** wzdłuż lewej strony, pod płytką. Przejście pod C5 ma ok. 3,6 mm wysokości.
+4. Włóż płytkę elementami do ściany: J1 w lewo, USB-C do góry. Wsuń ją pod górną ściankę tak, żeby gniazdo USB weszło w owalny otwór. Płytka oprze się na wspornikach i półkach.
+5. Załóż pokrywę i przykręć 3 śruby. Kołki pokrywy dociskają płytkę.
+6. Wtyk USB-C wkładasz z zewnątrz, od góry. Obudowa wtyku chowa się w kieszeni 13 × 8 mm.
+7. Wtyk RJ11 wkładasz z lewej strony, przez szczelinę w lewej ściance.
 
 ### Założenia do sprawdzenia
-- **Wysokość ESP32:** listwa żeńska 8,5 mm + plastik pinów męskich modułu 2,5 mm + PCB modułu 1,0 mm + USB-C 3,2 mm.
-  - Jeśli moduł siedzi niżej (piny bez dystansu) albo listwa jest inna, zmień `fheader_h` / `mheader_spacer`.
-  - Głębokość obudowy wynika z wtyku USB-C: grubość 6,5 mm, oś na wysokości USB, plus 1 mm luzu.
-- **Wtyk USB-C:** sztywna część 14 mm, przekrój 12 × 6,5 mm. Kabel Ø3,5 mm, promień gięcia 10 mm.
-  - Grubszy lub dłuższy wtyk wymaga zmiany `plug_len` / `plug_t` / `cable_d`.
-  - Wtyk kątowy (90°) pozwoliłby zmniejszyć prawą komorę.
-- **Wysokości elementów** są uproszczone (modele 3D w KiCad nie są przypisane):
-  - kondensatory foliowe 10 mm, elektrolity 12 mm, T1 11 mm, J1 14,5 mm;
-  - XY308 10 mm, D2 stojąca 11,5 mm, trymer 6,5 mm.
-- **Kable:** RJ11 wychodzi ok. 14 mm od ściany, więc nie mieści się w korytku 10 mm bez zgięcia pod obudową. Kabel USB wychodzi 7 mm od ściany.
-- **PCB:** prowadnice i półki zakładają frez konturowy zgodny z plikiem `06_outline` (55,5 × 45,9 mm).
+- **Stos ESP32:** listwa 8,5 + dystans pinów 2,5 + PCB 1,0 + USB-C 3,2 mm = 15,2 mm. Jeśli Twój moduł jest inny, zmień `fheader_h` / `mheader_spacer`. Oś USB musi zostać 5,0 mm od ściany – wtedy popraw też `air`.
+- **Wtyk USB-C:** metalowa końcówka 6,6 mm przed obudową wtyku (`plug_tip`), obudowa wtyku do 12,5 × 8 mm. Jeśli końcówka jest krótsza, zwiększ głębokość kieszeni (z `insert_need`).
+- **Gniazdo USB-C w otworze:** obudowa gniazda 8,94 × 3,2 mm, otwór 9,25 × 3,4 mm (pasowanie ciasne, ok. 0,15 mm na stronę). W razie potrzeby rozwierć otwór pilnikiem.
+- **Wysokości elementów** są uproszczone: C5 13 mm, J1 14,5 mm, D2 11,5 mm, C8 11 mm, T1 11 mm, elektrolity 12 mm.

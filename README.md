@@ -102,8 +102,8 @@ esphome run domofon.yaml
 ```
 
 ## Enclosure
-3D-printed flat wall box: 83.5 × 62.8 × 26.9 mm, a base glued to the wall plus a lid held by 4 screws.
-- Cable exits: RJ11 and USB-C point down, and the phone cable comes in through the back.
+3D-printed flat wall box: 68 × 68 × 26 mm, a base glued to the wall plus a lid held by 3 countersunk M3×10 screws in brass M3 Ø4×4 heat-set inserts. The PCB is flipped (components toward the wall).
+- Seen from the room: RJ11 exits left, the USB-C plug goes in from the top, and the phone cable comes in through the back (lower-left).
 - Source and print files are in [`hardware/enclosure/`](hardware/enclosure/). The Polish print and assembly guide is in its [README](hardware/enclosure/README.md).
 
 ## CNC

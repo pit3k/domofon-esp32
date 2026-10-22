@@ -27,3 +27,6 @@ JP1,"Wire jumper (insulated wire, component side, 17.78 mm)",-,own stock,1,0,sto
 MCU,"ESP32-C3 SuperMini (HW-466B) on female pin headers (parts sit under the module)",-,owned,1,0,stock
 PCB,"Single-sided copper-clad laminate (CNC-milled), ~55.6 x 46 mm",FR4 1.6 mm,own stock,1,0,stock
 PSU,"5 V USB power supply (isolated)",5 V / 1 A,owned,1,0,stock
+ENC-SCREW,"Enclosure lid screw, countersunk hex socket (ISO 10642 / DIN 7991)",M3x10,-,3,0,to buy
+ENC-INSERT,"Enclosure brass heat-set insert for the base posts (hole 4.0 mm)",M3 OD4 x 4 mm,-,3,0,to buy
+ENC-PRINT,"3D-printed enclosure base + lid (hardware/enclosure, PETG or PLA)",68x68x26 mm,print,1,0,print

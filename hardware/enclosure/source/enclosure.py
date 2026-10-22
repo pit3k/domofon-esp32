@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Parametric 3D-printed enclosure for the domofon-esp32 PCB (CadQuery).
+"""Parametric 3D-printed wall enclosure for the domofon-esp32 PCB (CadQuery), layout v7.
 
 Run:  python enclosure.py            (needs: pip install cadquery trimesh pyvista)
-Out:  ../step/*.step, ../stl/*.stl, ../3mf/*.3mf, ../previews/*.png, interference report on stdout
+Out:  ../step/*.step, ../stl/*.stl, ../3mf/*.3mf, preview meshes, interference report on stdout
 
-BOX COORDINATES (front view = looking at the component side of the PCB, box hanging on the wall):
-  X right, Y up, Z out of the wall (Z=0 = back face glued to the wall).
-  Origin X0/Y0 = lower-left corner of the PCB.
-  PCB is rotated so that its KiCad RIGHT edge (J1 RJ11 opening, X1 wire entries) points DOWN and its KiCad TOP
-  edge (ESP32 USB-C) points RIGHT:   X = 45.9 - y_kicad ,  Y = 55.5 - x_kicad
+BOX COORDINATES = view from the room LOOKING TOWARD THE WALL:
+  X right, Y up, Z out of the wall towards the viewer (Z=0 = back face glued to the wall).
+  Origin = outer lower-left corner of the box.
+  The PCB is FLIPPED: components face the wall, the solder side faces the lid. Seen from the front this
+  mirrors the KiCad layout left-right (no rotation):  X = PCB_X0 + 55.5 - x_kicad ,  Y = PCB_Y0 + 45.9 - y_kicad
+  -> J1 (RJ11) opens to the LEFT wall, the ESP32-C3 USB-C points UP.
 """
-import json, math, sys
+import json, math, re, sys
 from pathlib import Path
 import cadquery as cq
 
@@ -20,228 +21,119 @@ ROOT = ENC.parents[1]
 
 # ============================================================== PARAMETERS
 P = dict(
-    wall=2.0,            # side walls
-    back=2.0,            # back plate (glued to the wall)
-    lid_t=2.0,           # lid plate
-    clr=0.3,             # print clearance PCB <-> guides/walls
-    standoff=3.5,        # gap back plate -> PCB bottom (solder tails)
-    pcb_t=1.5,
-    pcb_w=45.9, pcb_h=55.5,          # PCB in BOX coordinates (X width, Y height)
-    left_margin=7.5,     # PCB left edge -> inner left wall (room for 2 screw bosses)
-    bottom_gap=3.0,      # PCB bottom edge -> inner floor (wire channel to X1)
-    top_gap=0.3,         # PCB top edge -> inner top wall (top wall = PCB guide)
-    # ESP32-C3 SuperMini stack on female headers
-    fheader_h=8.5,       # female header body height
-    mheader_spacer=2.5,  # plastic spacer of the male pins under the module
-    module_pcb=1.0,
-    module_parts=1.5,    # parts on top of the module
-    usbc_h=3.2,          # USB-C receptacle height
-    # USB-C cable inside the box
-    plug_len=14.0,       # rigid plug overmold incl. strain relief start (from receptacle mouth)
-    plug_w=12.0, plug_t=6.5,
-    cable_d=3.5,         # USB cable diameter
-    bend_r=10.0,         # minimum bend radius (cable centre line)
-    usb_exit_x=56.0,     # X of the USB cable exit in the bottom wall (box coords)
-    usb_exit_z=7.0,      # Z (from wall) of the cable centre at the exit -> inside a 10 mm deep cable duct
-    lid_air=1.0,         # clearance between highest part (USB plug) and lid
-    # cable duct below the box (only used for the preview and README numbers)
-    duct_w=20.0, duct_h=10.0,
-    # phone cable from the wall
-    wall_hole_d=12.0,
-    # screws: self-tapping screws for plastics 2.5 x 10 mm (pilot 2.1) -- or M3 heat-set inserts (hole 4.0)
-    boss_d=7.0, screw_pilot=2.1, screw_clear=2.9, head_d=5.5,
-    # RJ11 slot (plug inserted from below)
+    size=68.0, depth=26.0,   # outer W = H (square in the wall view), depth from the wall
+    wall=2.0,                # left / right / bottom walls
+    back=2.0,                # back plate (glued to the wall)
+    lid_t=3.0,               # lid plate (countersunk screw heads)
+    clr=0.3,                 # PCB edge <-> wall / guide clearance
+    pcb_w=55.5, pcb_h=45.9, pcb_t=1.5,
+    air=1.4,                 # back plate -> top of the USB-C receptacle (axis exactly 5.0 mm from the wall)
+    # ESP32-C3 SuperMini stack on female headers (measured from the PCB component face towards the wall)
+    fheader_h=8.5, mheader_spacer=2.5, module_pcb=1.0, module_parts=1.5, usbc_h=3.2,
+    # USB-C plug pocket in the top wall (overmold sits in it) and obround opening for the metal shell
+    usb_open_w=9.25, usb_open_t=3.4,          # plug shell 8.25 x 2.40 + 0.5 per side
+    pocket_w=13.0, pocket_t=8.0, pocket_r=2.0,
+    plug_tip=6.6,            # metal shell length in front of the overmold (typ. 6.5-6.7 mm)
+    insert_need=6.2,         # insertion for a fully mated plug (receptacle shell 6.20 mm)
+    cup_floor=1.0, cup_wall=1.2,
+    # wall cable hole, posts, screws
+    wall_hole=(16.0, 10.5), wall_hole_d=12.0,
+    posts=((6.0, 6.0), (62.0, 6.0), (62.0, 62.0)), post_d=7.5, insert_hole_d=4.0, insert_hole_depth=10.0,
+    screw_clear=3.4, csk_d=6.8,              # M3 countersunk (ISO 10642 / DIN 7991), 90 deg
+    # RJ11 slot in the left wall
     j1_slot_w=12.8,
-    # lid press pins (hold the PCB down)
-    pin_d=3.0, pin_gap=0.1,
-    r7_hole_d=4.5,       # screwdriver hole above trimmer R7
-    lip_h=2.0, lip_t=1.2,
+    # PCB fixing
+    support_d=3.0, pin_d=3.0, pin_gap=0.1, lip_h=2.0, lip_t=1.2, lip_clr=0.25,
 )
-# component heights above PCB top (mm), simplified bodies
+# component heights (from the PCB component face towards the wall), simplified bodies
 H = {"R0207_P7.62": 3.0, "R0207_P10.16": 3.0, "CFILM_P7.62": 11.0, "R0414_P15.24": 5.0, "DO34_P5.08": 2.2, "DO15_P5.08_V": 11.5,
      "CFILM_P5.08": 10.0, "CP_D5_P2.0": 12.0, "CA9V": 6.5, "DIP4": 4.5, "T1": 11.0, "MTJ642": 14.5,
      "XY308_2P": 10.0, "WIRE_P10.16": 2.5}
-
 data = json.loads((HERE / "board_components.json").read_text())
-# rev. 5 (line side for ES 201 970): parts taller/thicker than their PCB footprint outline.
-# C8 0.47 uF/250 V MKT (footprint CFILM_P7.62, same holes as the former R2): standing box, max 3.2 mm thick (between R1 and X1).
-# C5 is now WIMA MKS2 1 uF/100 V: 7.2 x 7.2 x 13 mm on the 5.08 mm footprint.
-OVR = {"C8": dict(h=11.0, body=dict(type="rect", x0=38.0, y0=17.85, x1=48.0, y1=21.05)),
-       "C5": dict(h=13.0, body=dict(type="rect", x0=46.6, y0=33.9, x1=53.8, y1=41.1))}
+OVR = {"C8": dict(h=11.0, body=dict(type="rect", x0=38.0, y0=17.85, x1=48.0, y1=21.05)),   # 0.47 uF/250 V MKT
+       "C5": dict(h=13.0, body=dict(type="rect", x0=46.6, y0=33.9, x1=53.8, y1=41.1))}     # WIMA MKS2 1 uF/100 V
 for _c in data["components"]:
     if _c["ref"] in OVR:
         _c["bodies"] = [OVR[_c["ref"]]["body"]]; _c["h"] = OVR[_c["ref"]]["h"]
-assert not data["board"]["mounting_holes"]
-
-def k2b(x, y):  # KiCad -> box XY
-    return (P["pcb_w"] - y, P["pcb_h"] - x)
+esp = next(c for c in data["components"] if c["ref"] == "ESP")
+j1 = next(c for c in data["components"] if c["ref"] == "J1")
 
 # ----------------------------------------------------------------- derived geometry
-Z_PCB_BOT = P["back"] + P["standoff"]
-Z_PCB_TOP = Z_PCB_BOT + P["pcb_t"]
-esp = next(c for c in data["components"] if c["ref"] == "ESP")
-usb_mouth = k2b(*esp["usb_mouth"])                     # (X, Y) of the receptacle mouth
-Z_MOD_BOT = Z_PCB_TOP + P["fheader_h"] + P["mheader_spacer"]
-Z_USB_C = Z_MOD_BOT + P["module_pcb"] + P["usbc_h"] / 2
-plug_end_x = usb_mouth[0] + P["plug_len"]
-cable_vx = plug_end_x + P["bend_r"]                    # vertical run of the cable after the bend
-Z_LID_IN = Z_USB_C + P["plug_t"] / 2 + P["lid_air"]
-IN_X0 = -P["left_margin"]
-IN_X1 = cable_vx + P["cable_d"] / 2 + 1.0
-IN_Y0 = -P["bottom_gap"]
-IN_Y1 = P["pcb_h"] + P["top_gap"]
-OUT_X0, OUT_X1 = IN_X0 - P["wall"], IN_X1 + P["wall"]
-OUT_Y0, OUT_Y1 = IN_Y0 - P["wall"], IN_Y1 + P["wall"]
-DEPTH = Z_LID_IN + P["lid_t"]
-W, Hh = OUT_X1 - OUT_X0, OUT_Y1 - OUT_Y0
-j1 = next(c for c in data["components"] if c["ref"] == "J1")
-J1_X = k2b(*j1["pos"])[0]
-r7 = next(c for c in data["components"] if c["ref"] == "R7")
-R7_XY = k2b(*r7["rotor"])
-x1 = next(c for c in data["components"] if c["ref"] == "X1")
-
-r_b = P["boss_d"] / 2
-e_ = 0.6   # bosses sink 0.6 mm into the walls (no tangent contact -> clean manifold mesh)
-BOSSES = [(IN_X0 + r_b - e_, 5.0), (IN_X0 + r_b - e_, P["pcb_h"] - 6.0),
-          (IN_X1 - r_b + e_, IN_Y1 - r_b + e_), (IN_X1 - r_b + e_, IN_Y0 + r_b - e_)]
-WALL_HOLE = ((P["pcb_w"] + IN_X1) / 2, 46.0)
+S, D, w = P["size"], P["depth"], P["wall"]
+Z_LID_IN = D - P["lid_t"]
+ESP_STACK = P["fheader_h"] + P["mheader_spacer"] + P["module_pcb"] + P["usbc_h"]      # 15.2
+Z_USB_TOP = P["back"] + P["air"]                     # receptacle face nearest to the wall
+Z_USB_C = Z_USB_TOP + P["usbc_h"] / 2                # USB axis = 5.0 mm from the wall
+Z_F = Z_USB_TOP + ESP_STACK                          # PCB component face
+Z_S = Z_F + P["pcb_t"]                               # PCB solder face
+PCB_X0 = w + P["clr"]
+# vertical position: the board top edge sits 'clr' under the inner face of the top wall
+TOP_WALL = 1.39
+Y_TOP_IN = S - TOP_WALL
+PCB_Y1 = Y_TOP_IN - P["clr"]
+PCB_Y0 = PCB_Y1 - P["pcb_h"]
+def k2b(x, y): return (PCB_X0 + P["pcb_w"] - x, PCB_Y0 + P["pcb_h"] - y)
+USB_X, Y_MOUTH = k2b(*esp["usb_mouth"])
+RECESS = S - Y_MOUTH
+# overmold pocket depth so that the plug reaches insert_need into the receptacle
+POCKET_DEPTH = round(RECESS - (P["plug_tip"] - P["insert_need"]), 2)
+Y_POCKET = S - POCKET_DEPTH                           # pocket floor (overmold stop)
+J1_Y = k2b(*j1["pos"])[1]
+J1_Z0 = Z_F - H["MTJ642"]
 
 def box(x0, y0, z0, x1, y1, z1):
     return cq.Workplane("XY").box(x1 - x0, y1 - y0, z1 - z0, centered=False).translate((x0, y0, z0))
-
 def cyl(x, y, z0, z1, d):
     return cq.Workplane("XY").circle(d / 2).extrude(z1 - z0).translate((x, y, z0))
+def ybox_round(xc, zc, wx, tz, y0, y1, r):
+    """rounded rectangle in the XZ plane, extruded along Y from y0 to y1"""
+    r = min(r, tz / 2 - 1e-3, wx / 2 - 1e-3)
+    s = cq.Workplane("XZ").center(xc, zc).rect(wx, tz).extrude(-(y1 - y0)).translate((0, y0, 0))
+    return s.edges("|Y").fillet(r)
 
-# ============================================================== PCB ASSEMBLY (for interference checks)
+# ============================================================== PCB ASSEMBLY (interference model)
 def pcb_assembly():
-    parts = {}
-    board = box(0, 0, Z_PCB_BOT, P["pcb_w"], P["pcb_h"], Z_PCB_TOP).edges("|Z").fillet(0.99)
-    parts["PCB"] = board
-    # solder tails under the PCB (2 mm) as one slab region is too pessimistic -> modelled per hole later
+    parts = {"PCB": box(PCB_X0, PCB_Y0, Z_F, PCB_X0 + P["pcb_w"], PCB_Y1, Z_S)}
     for c in data["components"]:
-        if c["fp"] == "ESP":
-            continue
-        h = c.get("h", H.get(c["fp"], 5.0))
-        solids = []
+        if c["fp"] == "ESP": continue
+        h = c.get("h", H.get(c["fp"], 5.0)); sol = []
         for b in c["bodies"]:
             if b["type"] == "rect":
                 (xa, ya), (xb, yb) = k2b(b["x0"], b["y0"]), k2b(b["x1"], b["y1"])
-                solids.append(box(min(xa, xb), min(ya, yb), Z_PCB_TOP, max(xa, xb), max(ya, yb), Z_PCB_TOP + h))
+                sol.append(box(min(xa, xb), min(ya, yb), Z_F - h, max(xa, xb), max(ya, yb), Z_F))
             else:
-                x, y = k2b(*b["c"]); solids.append(cyl(x, y, Z_PCB_TOP, Z_PCB_TOP + h, 2 * b["r"]))
-        if c["fp"] == "WIRE_P10.16":   # wire jumper JP1 between its pads
-            (xa, ya), (xb, yb) = k2b(c["pos"][0], c["pos"][1] - 8.89), k2b(c["pos"][0], c["pos"][1] + 8.89)
-            solids.append(box(min(xa, xb) - 0.6, min(ya, yb) - 0.6, Z_PCB_TOP, max(xa, xb) + 0.6, max(ya, yb) + 0.6, Z_PCB_TOP + h))
-        if solids:
-            s = solids[0]
-            for o in solids[1:]: s = s.union(o)
+                x, y = k2b(*b["c"]); sol.append(cyl(x, y, Z_F - h, Z_F, 2 * b["r"]))
+        if sol:
+            s = sol[0]
+            for o in sol[1:]: s = s.union(o)
             parts[c["ref"]] = s
-    # ESP32-C3 SuperMini: two female headers + module + USB-C
     ex, ey = esp["pos"]
     def lb(x0, y0, x1, y1, z0, z1):
         (xa, ya), (xb, yb) = k2b(ex + x0, ey + y0), k2b(ex + x1, ey + y1)
         return box(min(xa, xb), min(ya, yb), z0, max(xa, xb), max(ya, yb), z1)
-    e = lb(-7.62 - 1.27, -10.16, -7.62 + 1.27, 10.16, Z_PCB_TOP, Z_MOD_BOT)
-    e = e.union(lb(7.62 - 1.27, -10.16, 7.62 + 1.27, 10.16, Z_PCB_TOP, Z_MOD_BOT))
-    e = e.union(lb(-9.0, -10.16, 9.0, 12.36, Z_MOD_BOT, Z_MOD_BOT + P["module_pcb"]))
-    e = e.union(lb(-8.0, -9.0, 8.0, 11.5, Z_MOD_BOT + P["module_pcb"], Z_MOD_BOT + P["module_pcb"] + P["module_parts"]))
-    e = e.union(lb(-4.5, -12.2, 4.5, -4.9, Z_MOD_BOT + P["module_pcb"], Z_MOD_BOT + P["module_pcb"] + P["usbc_h"]))
+    zm = Z_F - P["fheader_h"] - P["mheader_spacer"]          # module PCB (side facing the board)
+    e = lb(-8.89, -10.16, -6.35, 10.16, zm, Z_F).union(lb(6.35, -10.16, 8.89, 10.16, zm, Z_F))
+    e = e.union(lb(-9.0, -10.16, 9.0, 12.36, zm - P["module_pcb"], zm))
+    e = e.union(lb(-8.0, -9.0, 8.0, 11.5, zm - P["module_pcb"] - P["module_parts"], zm - P["module_pcb"]))
+    # USB-C receptacle: obround shell 8.94 x 3.2 mm (rounded ends), mouth at usb_mouth
+    e = e.union(ybox_round(USB_X, Z_USB_C, 8.94, P["usbc_h"], k2b(ex, ey - 4.9)[1], Y_MOUTH, 1.55))
     parts["ESP"] = e
     return parts
 
-def usb_cable(d=None):
-    d = d or P["cable_d"]
-    """USB-C plug + cable: plug straight +X, bend down (radius bend_r), then an S-curve to the exit."""
-    mx, my = usb_mouth
-    plug = box(mx, my - P["plug_w"] / 2, Z_USB_C - P["plug_t"] / 2, plug_end_x, my + P["plug_w"] / 2, Z_USB_C + P["plug_t"] / 2)
-    plug = plug.edges("|X").fillet(2.0)
-    # cable path as a spline through points
-    pts = [(plug_end_x - 1, my, Z_USB_C)]
-    for a in range(10, 91, 10):
-        t = math.radians(a)
-        pts.append((plug_end_x + P["bend_r"] * math.sin(t), my - P["bend_r"] * (1 - math.cos(t)), Z_USB_C))
-    y_after = my - P["bend_r"]
-    y_s = IN_Y0 + 6          # S-curve ends here, then straight down through the slot
-    n = 12
-    for i in range(1, n + 1):
-        s = i / n; sm = (1 - math.cos(math.pi * s)) / 2
-        pts.append((cable_vx + (P["usb_exit_x"] - cable_vx) * sm, y_after + (y_s - y_after) * s,
-                    Z_USB_C + (P["usb_exit_z"] - Z_USB_C) * sm))
-    pts += [(P["usb_exit_x"], IN_Y0 + 3, P["usb_exit_z"]), (P["usb_exit_x"], OUT_Y0 - 3, P["usb_exit_z"])]
-    path = cq.Workplane("XY").spline([cq.Vector(*p) for p in pts], includeCurrent=False)
-    d0 = cq.Vector(*pts[1]) - cq.Vector(*pts[0])
-    prof = cq.Workplane(cq.Plane(origin=pts[0], xDir=(0, 1, 0), normal=d0.normalized().toTuple())).circle(d / 2)
-    cable = prof.sweep(path, isFrenet=False, transition="round")
-    return plug, cable, pts
+def usb_plug():
+    """plug inserted from above: metal shell 8.25 x 2.4 + overmold 12 x 6.5 sitting on the pocket floor"""
+    shell = ybox_round(USB_X, Z_USB_C, 8.25, 2.4, Y_POCKET - P["plug_tip"], Y_POCKET, 1.2)
+    over = ybox_round(USB_X, Z_USB_C, 12.0, 6.5, Y_POCKET, Y_POCKET + 20, 2.0)
+    return shell, over
 
-# ============================================================== BASE
-def make_base():
-    b = box(OUT_X0, OUT_Y0, 0, OUT_X1, OUT_Y1, Z_LID_IN)
-    b = b.edges("|Z").fillet(2.0)
-    cav = box(IN_X0, IN_Y0, P["back"], IN_X1, IN_Y1, Z_LID_IN + 1)
-    b = b.cut(cav)
-    # screw bosses
-    for x, y in BOSSES:
-        b = b.union(cyl(x, y, P["back"] - 0.01, Z_LID_IN, P["boss_d"]))
-        b = b.cut(cyl(x, y, Z_LID_IN - 12, Z_LID_IN + 1, P["screw_pilot"]))
-    # PCB supports (under the board, 1.2 mm overlap) + side guides
-    for (x0, y0, x1, y1) in SUPPORTS:
-        b = b.union(box(x0, y0, P["back"] - 0.01, x1, y1, Z_PCB_BOT))
-    for (x0, y0, x1, y1) in GUIDES:
-        b = b.union(box(x0, y0, P["back"] - 0.01, x1, y1, Z_PCB_TOP + 1.5))
-    # wall hole for the phone cable (through the back plate)
-    b = b.cut(cyl(WALL_HOLE[0], WALL_HOLE[1], -1, P["back"] + 1, P["wall_hole_d"]))
-    # J1 RJ11 slot in the bottom wall, open towards the lid
-    b = b.cut(box(J1_X - P["j1_slot_w"] / 2, OUT_Y0 - 1, Z_PCB_TOP + 0.5, J1_X + P["j1_slot_w"] / 2, IN_Y0 + 1, Z_LID_IN + 1))
-    # USB cable slot in the bottom wall, open towards the lid (cable is laid in, lid tongue clamps it)
-    w = P["cable_d"] + 0.2
-    b = b.cut(box(P["usb_exit_x"] - w / 2, OUT_Y0 - 1, P["usb_exit_z"], P["usb_exit_x"] + w / 2, IN_Y0 + 1, Z_LID_IN + 1))
-    b = b.cut(cyl(P["usb_exit_x"], OUT_Y0 - 1, P["usb_exit_z"], P["usb_exit_z"] + 0.01, w)) if False else b
-    b = b.cut(cq.Workplane("XZ").center(P["usb_exit_x"], P["usb_exit_z"]).circle(w / 2).extrude(-(P["wall"] + 2)).translate((0, OUT_Y0 - 1, 0)))
-    # cable-tie anchor next to the USB exit (bridge on the back plate)
-    tx = P["usb_exit_x"] + 6
-    b = b.union(box(tx - 2, IN_Y0 + 2, P["back"] - 0.01, tx + 2, IN_Y0 + 6, P["back"] + 4))
-    b = b.cut(box(tx - 3, IN_Y0 + 2.9, P["back"] + 0.6, tx + 3, IN_Y0 + 5.1, P["back"] + 2.6))
-    return b
-
-# ============================================================== LID
-def make_lid():
-    L = box(OUT_X0, OUT_Y0, Z_LID_IN, OUT_X1, OUT_Y1, DEPTH).edges("|Z").fillet(2.0)
-    # alignment lip inside the walls
-    c = 0.25
-    lip = box(IN_X0 + c, IN_Y0 + c, Z_LID_IN - P["lip_h"], IN_X1 - c, IN_Y1 - c, Z_LID_IN + 0.01)
-    lip = lip.cut(box(IN_X0 + c + P["lip_t"], IN_Y0 + c + P["lip_t"], Z_LID_IN - P["lip_h"] - 1, IN_X1 - c - P["lip_t"], IN_Y1 - c - P["lip_t"], Z_LID_IN + 1))
-    for x, y in BOSSES:
-        lip = lip.cut(cyl(x, y, Z_LID_IN - 5, Z_LID_IN + 1, P["boss_d"] + 1.0))
-    lip = lip.cut(box(J1_X - P["j1_slot_w"] / 2 - 0.3, IN_Y0 - 1, Z_LID_IN - 5, J1_X + P["j1_slot_w"] / 2 + 0.3, IN_Y0 + 3, Z_LID_IN + 1))
-    L = L.union(lip)
-    # tongue clamping the USB cable in its slot (0.3 mm squeeze)
-    w = P["cable_d"] + 0.2
-    L = L.union(box(P["usb_exit_x"] - w / 2 + 0.15, OUT_Y0 + 0.2, P["usb_exit_z"] + P["cable_d"] / 2 - 0.3,
-                    P["usb_exit_x"] + w / 2 - 0.15, IN_Y0 + 0.01, Z_LID_IN + 0.01))
-    # press pins on the PCB top
-    for x, y in PINS:
-        L = L.union(cyl(x, y, Z_PCB_TOP + P["pin_gap"], Z_LID_IN + 0.01, P["pin_d"]))
-    # screw holes + shallow counterbore for the head
-    for x, y in BOSSES:
-        L = L.cut(cyl(x, y, Z_LID_IN - 1, DEPTH + 1, P["screw_clear"]))
-        L = L.cut(cyl(x, y, DEPTH - 0.6, DEPTH + 1, P["head_d"] + 0.4))
-    # trimmer R7 screwdriver hole
-    L = L.cut(cyl(R7_XY[0], R7_XY[1], Z_LID_IN - 1, DEPTH + 1, P["r7_hole_d"]))
-    # vent slots (front face, above the ESP32 and in the cable bay)
-    for i in range(5):
-        x = P["pcb_w"] + 4 + i * 3.0
-        L = L.cut(box(x, 8, Z_LID_IN - 1, x + 1.5, 20, DEPTH + 1))
-        L = L.cut(box(x, 24, Z_LID_IN - 1, x + 1.5, 34, DEPTH + 1))
-    return L
-
-# ============================================================== supports / guides / pins placement
+# ============================================================== placement of PCB supports / lid pins
 def holes_box():
-    import re
     out = []
     for f in ("domofon-PTH.drl", "domofon-NPTH.drl"):
         tools, cur = {}, None
-        for line in open(ROOT / "hardware/pcb/gerbers" / f):
+        p = ROOT / "hardware/pcb/gerbers" / f
+        if not p.exists(): continue
+        for line in open(p):
             line = line.strip()
             m = re.match(r"^T(\d+)C([\d.]+)", line)
             if m: tools[m.group(1)] = float(m.group(2)); continue
@@ -252,13 +144,6 @@ def holes_box():
     return out
 HOLES = holes_box()
 
-def rect_clear(x0, y0, x1, y1, holes, d=1.6):
-    for hx, hy, hd in holes:
-        dx = max(x0 - hx, 0, hx - x1); dy = max(y0 - hy, 0, hy - y1)
-        if math.hypot(dx, dy) < hd / 2 + d: return False
-    return True
-
-CIRCLES = []
 def body_rects():
     rs = []
     for c in data["components"]:
@@ -267,130 +152,159 @@ def body_rects():
                 (xa, ya), (xb, yb) = k2b(b["x0"], b["y0"]), k2b(b["x1"], b["y1"])
                 rs.append((min(xa, xb), min(ya, yb), max(xa, xb), max(ya, yb)))
             else:
-                x, y = k2b(*b["c"]); CIRCLES.append((x, y, b["r"]))
-    # ESP module footprint (pins can not pass the module)
+                x, y = k2b(*b["c"]); rs.append((x - b["r"], y - b["r"], x + b["r"], y + b["r"]))
     ex, ey = esp["pos"]
-    (xa, ya), (xb, yb) = k2b(ex - 9, ey - 12.2), k2b(ex + 9, ey + 12.36)
+    (xa, ya), (xb, yb) = k2b(ex - 9.5, ey - 12.5), k2b(ex + 9.5, ey + 12.6)
     rs.append((min(xa, xb), min(ya, yb), max(xa, xb), max(ya, yb)))
     j = next(c for c in data["components"] if c["ref"] == "JP1")
     (xa, ya), (xb, yb) = k2b(j["pos"][0], j["pos"][1] - 8.89), k2b(j["pos"][0], j["pos"][1] + 8.89)
     rs.append((min(xa, xb) - 0.8, min(ya, yb) - 0.8, max(xa, xb) + 0.8, max(ya, yb) + 0.8))
     return rs
+RECTS = body_rects()
 
-def pick_pin(target, rects, r):
+def free(x, y, r):
+    if any(x + r + 0.8 > a and x - r - 0.8 < c and y + r + 0.8 > b and y - r - 0.8 < d for a, b, c, d in RECTS): return False
+    if any(math.dist((x, y), (hx, hy)) < hd / 2 + r + 1.2 for hx, hy, hd in HOLES): return False
+    return True
+
+def pick(target, r):
     best = None
-    for i in range(0, 220):
-        for j in range(0, 270):
-            x, y = 1.8 + i * 0.2, 1.8 + j * 0.2
-            if x > P["pcb_w"] - 1.8 or y > P["pcb_h"] - 1.8: continue
-            if any(x + r + 0.8 > a and x - r - 0.8 < c and y + r + 0.8 > b and y - r - 0.8 < d for a, b, c, d in rects): continue
-            if any(math.dist((x, y), (cx, cy)) < cr + r + 0.8 for cx, cy, cr in CIRCLES): continue
-            if not rect_clear(x - r, y - r, x + r, y + r, HOLES, 1.2): continue
+    for i in range(0, 280):
+        for j in range(0, 230):
+            x, y = PCB_X0 + 1.8 + i * 0.2, PCB_Y0 + 1.8 + j * 0.2
+            if x > PCB_X0 + P["pcb_w"] - 1.8 or y > PCB_Y1 - 1.8 or not free(x, y, r): continue
             dd = math.dist((x, y), target)
             if best is None or dd < best[0]: best = (dd, (round(x, 2), round(y, 2)))
     return best[1]
-
-RECTS = body_rects()
-PINS = [pick_pin(t, RECTS, P["pin_d"] / 2) for t in [(0, 0), (0, P["pcb_h"]), (P["pcb_w"], P["pcb_h"]), (P["pcb_w"], 0)]]
-
-def pick_support(cands):
-    for (x0, y0, x1, y1) in cands:
-        if rect_clear(x0, y0, x1, y1, HOLES): return (x0, y0, x1, y1)
-    raise RuntimeError("no support spot")
-ov = 1.2  # how far supports reach under the PCB
-SUPPORTS = []
-for y in (3.0, 10.0, 46.0, 51.0):      # left edge (outside part merges with the screw boss)
-    SUPPORTS.append(pick_support([(-1.5, y + k, ov, y + k + 3) for k in (0, 1, 2, -1, -2, 3)]))
-for y in (2.0, 25.0, 51.0):            # right edge
-    SUPPORTS.append(pick_support([(P["pcb_w"] - ov, y + k, P["pcb_w"] + 1.5, y + k + 3) for k in (0, 1, 2, -1, -2, 3, 4)]))
-for x in (6.0, 28.0):                  # bottom edge
-    SUPPORTS.append(pick_support([(x + k, -0.5, x + k + 3, ov) for k in (0, 1, 2, -1, -2, 3)]))
-for x in (14.0, 34.0):                 # top edge
-    SUPPORTS.append(pick_support([(x + k, P["pcb_h"] - ov, x + k + 3, IN_Y1) for k in (0, 1, 2, -1, -2, 3)]))
-c = P["clr"]
-GUIDES = [
-    (P["pcb_w"] + c, 2.0, P["pcb_w"] + c + 1.5, 7.0),        # right edge guides (in the cable bay)
-    (P["pcb_w"] + c, 50.0, P["pcb_w"] + c + 1.5, 55.0),
-    (2.0, -c - 1.5, 6.0, -c),                                # bottom-left guide (wires run further right)
-    (-c - 1.5, 15.0, -c, 20.0), (-c - 1.5, 36.0, -c, 41.0),  # left edge guides between the bosses
+X1_, Y1_ = PCB_X0 + P["pcb_w"], PCB_Y1
+SPOTS = []   # free spots (no component body, >= 1.2 mm from any drilled hole); the right half of the board is full
+for t in [(PCB_X0, PCB_Y0), (PCB_X0, Y1_), (X1_, Y1_), ((PCB_X0 + X1_) / 2, (PCB_Y0 + Y1_) / 2)]:
+    p = pick(t, P["support_d"] / 2)
+    if all(math.dist(p, q) > 5 for q in SPOTS): SPOTS.append(p)
+c_ = P["clr"]
+GUIDES = [  # (x0, y0, x1, y1) ribs from the back plate up to 1.5 mm above the PCB solder face, outside the board outline
+    (X1_ + c_, PCB_Y0 + 4, X1_ + c_ + 1.5, PCB_Y0 + 10),
+    (X1_ + c_, PCB_Y0 + 26, X1_ + c_ + 1.5, PCB_Y0 + 32),
+    (8.0, PCB_Y0 - c_ - 1.5, 14.0, PCB_Y0 - c_),
+    (50.0, PCB_Y0 - c_ - 1.5, 56.0, PCB_Y0 - c_),
 ]
+
+# ============================================================== BASE
+def make_base():
+    b = box(0, 0, 0, S, S, Z_LID_IN).edges("|Z").fillet(2.0)
+    b = b.cut(box(w, w, P["back"], S - w, Y_TOP_IN, Z_LID_IN + 1))
+    # posts + corner gussets (posts merge into the walls)
+    for x, y in P["posts"]:
+        gx = (w - 0.01, x) if x < S / 2 else (x, S - w + 0.01)
+        gy = (w - 0.01, y) if y < S / 2 else (y, Y_TOP_IN + 0.01)
+        b = b.union(box(gx[0], gy[0], P["back"] - 0.01, gx[1], gy[1], Z_LID_IN))
+        b = b.union(cyl(x, y, P["back"] - 0.01, Z_LID_IN, P["post_d"]))
+        b = b.cut(cyl(x, y, Z_LID_IN - P["insert_hole_depth"], Z_LID_IN + 1, P["insert_hole_d"]))
+    # PCB supports (back plate -> PCB component face) and edge guides
+    for x, y in SPOTS:
+        b = b.union(cyl(x, y, P["back"] - 0.01, Z_F, P["support_d"]))
+    for (x0, y0, x1, y1) in GUIDES:
+        b = b.union(box(x0, y0, P["back"] - 0.01, x1, y1, Z_S + 1.5))
+        # 1 mm ledge under the board edge (the board rests on it with its component face)
+        if x0 > X1_: b = b.union(box(X1_ - 1.0, y0, P["back"] - 0.01, x0 + 0.01, y1, Z_F))
+        else: b = b.union(box(x0, y1 - 0.01, P["back"] - 0.01, x1, PCB_Y0 + 1.0, Z_F))
+    # USB-C: cup under the pocket (floor carries the obround opening), pocket for the overmold, opening
+    pw, pt, cw = P["pocket_w"], P["pocket_t"], P["cup_wall"]
+    if Y_POCKET < Y_TOP_IN:   # pocket floor is below the inner face of the top wall -> cup hangs into the box
+        cup = ybox_round(USB_X, Z_USB_C, pw + 2 * cw, pt + 2 * cw, Y_POCKET - P["cup_floor"], Y_TOP_IN + 0.01, P["pocket_r"] + cw)
+        cup = cup.cut(box(0, 0, -5, S, S, P["back"] - 0.01))       # do not stick out of the back face
+        b = b.union(cup)
+    b = b.cut(ybox_round(USB_X, Z_USB_C, pw, pt, Y_POCKET, S + 1, P["pocket_r"]))
+    b = b.cut(ybox_round(USB_X, Z_USB_C, P["usb_open_w"], P["usb_open_t"], Y_POCKET - P["cup_floor"] - 2, Y_POCKET + 0.01, P["usb_open_t"] / 2))
+    # wall cable hole
+    b = b.cut(cyl(*P["wall_hole"], -1, P["back"] + 1, P["wall_hole_d"]))
+    # RJ11 slot in the left wall, open towards the lid
+    b = b.cut(box(-1, J1_Y - P["j1_slot_w"] / 2, J1_Z0 - 0.5, w + 0.01, J1_Y + P["j1_slot_w"] / 2, Z_LID_IN + 1))
+    return b
+
+# ============================================================== LID
+def make_lid():
+    L = box(0, 0, Z_LID_IN, S, S, D).edges("|Z").fillet(2.0)
+    lc, lt = P["lip_clr"], P["lip_t"]
+    x0, y0, x1, y1 = w + lc, w + lc, S - w - lc, Y_TOP_IN - lc
+    lip = box(x0, y0, Z_LID_IN - P["lip_h"], x1, y1, Z_LID_IN + 0.01)
+    lip = lip.cut(box(x0 + lt, y0 + lt, Z_LID_IN - 5, x1 - lt, y1 - lt, Z_LID_IN + 1))
+    for x, y in P["posts"]:
+        lip = lip.cut(cyl(x, y, Z_LID_IN - 5, Z_LID_IN + 1, P["post_d"] + 1.0))
+        gx = (0, x + 4.5) if x < S / 2 else (x - 4.5, S)
+        gy = (0, y + 4.5) if y < S / 2 else (y - 4.5, S)
+        lip = lip.cut(box(gx[0], gy[0], Z_LID_IN - 5, gx[1], gy[1], Z_LID_IN + 1))
+    for (gx0, gy0, gx1, gy1) in GUIDES:
+        lip = lip.cut(box(gx0 - 0.5, gy0 - 0.5, Z_LID_IN - 5, gx1 + 0.5, gy1 + 0.5, Z_LID_IN + 1))
+    L = L.union(lip)
+    for x, y in SPOTS:   # press pins on the PCB solder face, coaxial with the supports
+        L = L.union(cyl(x, y, Z_S + P["pin_gap"], Z_LID_IN + 0.01, P["pin_d"]))
+    for x, y in P["posts"]:
+        L = L.cut(cyl(x, y, Z_LID_IN - 6, D + 1, P["screw_clear"]))
+        h = (P["csk_d"] - P["screw_clear"]) / 2     # 90 deg cone
+        cone = cq.Workplane("XY").add(cq.Solid.makeCone(P["screw_clear"] / 2, P["csk_d"] / 2 + 0.5, h + 0.5,
+                                                        pnt=cq.Vector(x, y, D - h), dir=cq.Vector(0, 0, 1)))
+        L = L.cut(cone)
+    return L
 
 # ============================================================== BUILD + CHECK + EXPORT
 def main():
-    import time; t0 = time.time()
-    T = lambda m: print(f'[{time.time()-t0:6.1f}s] {m}', flush=True)
     for k in ("step", "stl", "3mf", "previews"):
         (ENC / k).mkdir(exist_ok=True)
     base, lid = make_base(), make_lid()
-    T('base+lid'); pcb = pcb_assembly()
-    plug, cable, cable_pts = usb_cable()
-    print(f"outer size: {W:.1f} x {Hh:.1f} x {DEPTH:.1f} mm (W x H x depth from wall)")
-    print(f"PCB top Z={Z_PCB_TOP:.1f}, module bottom Z={Z_MOD_BOT:.1f}, USB axis Z={Z_USB_C:.2f}, lid inner Z={Z_LID_IN:.2f}")
-    print(f"USB mouth X={usb_mouth[0]:.2f} Y={usb_mouth[1]:.2f}; cable vertical X={cable_vx:.1f}; exit X={P['usb_exit_x']} Z={P['usb_exit_z']}")
-    print(f"J1 centre X={J1_X:.2f}; R7 rotor {R7_XY}; pins {PINS}; wall hole {WALL_HOLE}")
-    print("supports", SUPPORTS)
-    T('models'); # interference
-    report = []
+    pcb = pcb_assembly(); shell, over = usb_plug()
+    print(f"outer size: {S:.0f} x {S:.0f} x {D:.0f} mm; top wall {TOP_WALL} mm; lid {P['lid_t']} mm")
+    print(f"PCB X {PCB_X0:.2f}..{PCB_X0+P['pcb_w']:.2f}, Y {PCB_Y0:.2f}..{PCB_Y1:.2f}, component face Z={Z_F:.2f}, solder face Z={Z_S:.2f}")
+    print(f"USB-C axis X={USB_X:.2f} Z={Z_USB_C:.2f} (from wall); mouth Y={Y_MOUTH:.2f} -> {RECESS:.2f} mm below the top surface")
+    print(f"pocket {P['pocket_w']}x{P['pocket_t']} R{P['pocket_r']}, depth {POCKET_DEPTH:.2f} mm (floor Y={Y_POCKET:.2f}); "
+          f"plug insertion = {P['plug_tip'] - (Y_POCKET - Y_MOUTH):.2f} mm (tip {P['plug_tip']} mm)")
+    print(f"J1 slot centre Y={J1_Y:.2f}, Z {J1_Z0-0.5:.1f}..{Z_LID_IN}; supports/pins at {SPOTS}")
+    ok = True
     def vol(a, b):
-        try:
-            return a.intersect(b).val().Volume()
-        except Exception:
-            return 0.0
-    items = dict(pcb); items["USB plug"] = plug
-    _, cable_chk, _ = usb_cable(d=P["cable_d"] - 0.7)   # lid tongue squeezes the cable by 0.3 mm on purpose
-    items["USB cable"] = cable_chk
-    worst = 0.0
+        try: return a.intersect(b).val().Volume()
+        except Exception: return 0.0
+    items = dict(pcb); items["USB shell"] = shell; items["USB overmold"] = over
     for name, s in items.items():
         for pn, part in (("base", base), ("lid", lid)):
             v = vol(s, part)
-            if name == "PCB" and pn == "base":
-                pass
-            report.append((name, pn, v))
-            if v > 1e-3: print(f"  INTERFERENCE {name} x {pn}: {v:.3f} mm3")
-    # PCB-to-base: supports touch the board bottom face exactly (volume 0); check touching faces only
-    # cable vs walls: only the exit slot region may touch
-    ok = all(v < 1e-3 for n, p, v in report)
+            if v > 1e-3: ok = False; print(f"  INTERFERENCE {name} x {pn}: {v:.3f} mm3")
+    v = vol(base, lid)
+    if v > 1e-3: ok = False; print(f"  INTERFERENCE base x lid: {v:.3f} mm3")
+    zmin = min(s.val().BoundingBox().zmin for n, s in pcb.items())
+    print(f"lowest component Z={zmin:.2f} (back plate inner face Z={P['back']}); highest solder side Z={Z_S:.2f} < lid lip {Z_LID_IN-P['lip_h']:.1f}")
+    for x, y in P["posts"]:
+        dmin = math.dist((x, y), P["wall_hole"]) - P["wall_hole_d"] / 2 - P["post_d"] / 2
+        print(f"  post {x,y}: clearance to wall hole {dmin:.2f} mm")
+    print(f"  wall hole top Y={P['wall_hole'][1]+P['wall_hole_d']/2:.1f} vs PCB bottom Y={PCB_Y0:.2f}")
     print("interference check:", "OK - no collisions" if ok else "COLLISIONS (see above)")
-    # clearances
-    zmax = {n: s.val().BoundingBox().zmax for n, s in items.items()}
-    print("highest part above lid inner:", max((v - Z_LID_IN, n) for n, v in zmax.items()))
-    T('interference'); # exports: print orientation
-    base_p = base
-    lid_p = lid.rotate((0, 0, 0), (1, 0, 0), 180).translate((0, 0, DEPTH))
+    # print orientation: base on its back, lid outer face down
+    lid_p = lid.rotate((0, 0, 0), (1, 0, 0), 180)
     lid_p = lid_p.translate((0, 0, -lid_p.val().BoundingBox().zmin))
-    for n, s in (("enclosure_base", base_p), ("enclosure_lid", lid_p)):
+    for n, s in (("enclosure_base", base), ("enclosure_lid", lid_p)):
         cq.exporters.export(s, str(ENC / "stl" / f"{n}.stl"), tolerance=0.02, angularTolerance=0.1)
         cq.exporters.export(s, str(ENC / "step" / f"{n}.step"))
-    # 3MF (Bambu Studio): one file per part + one plate with both parts side by side
     import trimesh
     mb = trimesh.load(ENC / "stl" / "enclosure_base.stl"); ml = trimesh.load(ENC / "stl" / "enclosure_lid.stl")
+    print("watertight:", mb.is_watertight, ml.is_watertight)
     for n, m in (("enclosure_base", mb), ("enclosure_lid", ml)):
-        m2 = m.copy(); m2.apply_translation([-m2.bounds[0][0], -m2.bounds[0][1], -m2.bounds[0][2]])
-        trimesh.Scene({n: m2}).export(ENC / "3mf" / f"{n}.3mf")
-    a = mb.copy(); a.apply_translation(-a.bounds[0])
-    b = ml.copy(); b.apply_translation(-b.bounds[0] + [0, a.extents[1] + 10, 0])
-    sc = trimesh.Scene(); sc.add_geometry(a, node_name="base", geom_name="base"); sc.add_geometry(b, node_name="lid", geom_name="lid")
+        m2 = m.copy(); m2.apply_translation(-m2.bounds[0]); trimesh.Scene({n: m2}).export(ENC / "3mf" / f"{n}.3mf")
+    a = mb.copy(); a.apply_translation(-a.bounds[0]); bb = ml.copy(); bb.apply_translation(-bb.bounds[0] + [a.extents[0] + 10, 0, 0])
+    sc = trimesh.Scene(); sc.add_geometry(a, node_name="base", geom_name="base"); sc.add_geometry(bb, node_name="lid", geom_name="lid")
     sc.export(ENC / "3mf" / "enclosure_plate_base_and_lid.3mf")
-    T('stl/step/3mf parts'); asm = cq.Assembly(name="domofon_enclosure")
-    asm.add(base, name="base", color=cq.Color(0.85, 0.85, 0.88))
-    asm.add(lid, name="lid", color=cq.Color(0.6, 0.75, 0.9))
+    asm = cq.Assembly(name="domofon_enclosure")
+    asm.add(base, name="base", color=cq.Color(0.85, 0.85, 0.88)); asm.add(lid, name="lid", color=cq.Color(0.6, 0.75, 0.9))
     for n, s in pcb.items():
         asm.add(s, name=n, color=cq.Color(0.1, 0.5, 0.2) if n == "PCB" else cq.Color(0.3, 0.3, 0.3))
-    asm.add(plug, name="usb_plug", color=cq.Color(0.1, 0.1, 0.1)); asm.add(cable, name="usb_cable", color=cq.Color(0.1, 0.1, 0.1))
+    asm.add(shell, name="usb_shell", color=cq.Color(0.7, 0.7, 0.7)); asm.add(over, name="usb_overmold", color=cq.Color(0.1, 0.1, 0.1))
     asm.save(str(ENC / "step" / "enclosure_assembly_with_pcb.step"))
-    T('assembly step'); # preview meshes (assembly coordinates)
     tmp = ENC / "previews" / "_mesh"; tmp.mkdir(exist_ok=True)
     cq.exporters.export(base, str(tmp / "base.stl"), tolerance=0.05)
     cq.exporters.export(lid, str(tmp / "lid.stl"), tolerance=0.05)
-    comp = cq.Workplane("XY").add(cq.Compound.makeCompound([s.val() for n, s in pcb.items() if n != "PCB"]))
     cq.exporters.export(pcb["PCB"], str(tmp / "pcb.stl"), tolerance=0.05)
-    cq.exporters.export(comp, str(tmp / "parts.stl"), tolerance=0.05)
-    cq.exporters.export(cq.Workplane("XY").add(cq.Compound.makeCompound([plug.val(), cable.val()])), str(tmp / "usb.stl"),
-                        tolerance=0.3, angularTolerance=0.5)   # fine tessellation of the swept cable is extremely slow
-    json.dump(dict(W=W, H=Hh, D=DEPTH, OUT=(OUT_X0, OUT_Y0, OUT_X1, OUT_Y1), J1_X=J1_X, usb_exit_x=P["usb_exit_x"],
-                   usb_exit_z=P["usb_exit_z"], duct=(P["duct_w"], P["duct_h"]), wall_hole=WALL_HOLE,
-                   Z_LID_IN=Z_LID_IN), open(tmp / "info.json", "w"))
-    T('done'); return ok
+    cq.exporters.export(cq.Workplane("XY").add(cq.Compound.makeCompound([s.val() for n, s in pcb.items() if n != "PCB"])), str(tmp / "parts.stl"), tolerance=0.05)
+    cq.exporters.export(cq.Workplane("XY").add(cq.Compound.makeCompound([shell.val(), over.val()])), str(tmp / "usb.stl"), tolerance=0.05)
+    json.dump(dict(S=S, D=D, wall_hole=P["wall_hole"], usb_x=USB_X), open(tmp / "info.json", "w"))
+    return ok
 
 if __name__ == "__main__":
     sys.exit(0 if main() else 1)
