@@ -78,11 +78,11 @@ dtmf_tone:
     token: !secret ha_token
   wavs:
     - name: enter_code
-      tts: {text: "Wprowadź kod"}
+      tts: {text: "Wprowadź kod", voice: pl_PL-gosia-medium}
     - name: door_opened
-      tts: {text: "Drzwi otwarte"}
+      tts: {text: "Drzwi otwarte", voice: pl_PL-gosia-medium}
     - name: code_invalid
-      tts: {text: "Kod nieprawidłowy"}
+      tts: {text: "Kod nieprawidłowy", voice: pl_PL-gosia-medium}
     - name: ringback
       tone: {frequency: 425, on_time: 1s, off_time: 4s}
 
