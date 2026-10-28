@@ -2,10 +2,14 @@
 # Sekrety: skopiuj secrets.yaml.example -> secrets.yaml
 # Komponenty: https://github.com/pit3k/esphome-dtmf-tone
 #             https://github.com/pit3k/esphome-dtmf-decoder
+#
+# GPIO5 = ton niski, GPIO6 = ton wysoki (sumator R8a/R8b).
+# Sekwencje: 0-9 * # A-D, spacja ignorowana, przecinek = pauza.
+# Przyklad: "1", "1234#", "9,123"
 
 esphome:
-  name: domofon
-  friendly_name: Domofon
+  name: intercom
+  friendly_name: Intercom
 
 esp32:
   variant: esp32c3
@@ -22,17 +26,24 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  ap:
+    ssid: Intercom Fallback Hotspot
+    password: !secret ap_password
+
+captive_portal:
 
 external_components:
-  - source: github://pit3k/esphome-dtmf-tone@bfabc66f658b251451d672c5697a7d7f16cc7fd1
+  - source: github://pit3k/esphome-dtmf-tone
+    refresh: 0s
     components: [dtmf_tone]
   - source: github://pit3k/esphome-dtmf-decoder
+    refresh: 0s
     components: [dtmf_decoder]
 
 dtmf_decoder:
   id: dtmf
   pin: GPIO1
-  enabled: false
+  enabled: true
   sample_rate: 8000
   block_size: 205
   min_amplitude: 25
@@ -60,6 +71,20 @@ dtmf_tone:
   sample_rate: 32000
   amplitude: 100%
   high_tone_level: 80%
+  wav_sample_rate: 8000
+  # Glos jest generowany podczas kompilacji przez TTS (Piper) w Home Assistant.
+  home_assistant:
+    url: !secret ha_url
+    token: !secret ha_token
+  wavs:
+    - name: enter_code
+      tts: {text: "Wprowadź kod"}
+    - name: door_opened
+      tts: {text: "Drzwi otwarte"}
+    - name: code_invalid
+      tts: {text: "Kod nieprawidłowy"}
+    - name: ringback
+      tone: {frequency: 425, on_time: 1s, off_time: 4s}
 
 event:
   - platform: template
@@ -87,6 +112,18 @@ switch:
       - dtmf_tone.stop: dtmf_gen
       - dtmf_decoder.disable: dtmf
       - dtmf_decoder.clear_sequence: dtmf
+
+  - platform: template
+    id: ringback_loop
+    name: "Domofon sygnał oczekiwania"
+    optimistic: true
+    turn_on_action:
+      - dtmf_tone.play_wav:
+          id: dtmf_gen
+          name: ringback
+          loop: true
+    turn_off_action:
+      - dtmf_tone.stop: dtmf_gen
 
 text:
   - platform: template
@@ -122,7 +159,7 @@ number:
     min_value: 100
     max_value: 30000
     step: 100
-    initial_value: 200
+    initial_value: 3000
     optimistic: true
     restore_value: true
   - platform: template
@@ -146,7 +183,7 @@ number:
     min_value: 0
     max_value: 30000
     step: 100
-    initial_value: 1000
+    initial_value: 5000
     optimistic: true
     restore_value: true
 
@@ -180,3 +217,21 @@ button:
     name: "Domofon otwórz furtkę"
     on_press:
       - script.execute: open_gate
+  - platform: template
+    name: "Domofon głos: wprowadź kod"
+    on_press:
+      - dtmf_tone.play_wav:
+          id: dtmf_gen
+          name: enter_code
+  - platform: template
+    name: "Domofon głos: drzwi otwarte"
+    on_press:
+      - dtmf_tone.play_wav:
+          id: dtmf_gen
+          name: door_opened
+  - platform: template
+    name: "Domofon głos: kod nieprawidłowy"
+    on_press:
+      - dtmf_tone.play_wav:
+          id: dtmf_gen
+          name: code_invalid
