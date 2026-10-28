@@ -101,6 +101,16 @@ cp secrets.yaml.example secrets.yaml   # fill in Wi-Fi credentials
 esphome run domofon.yaml
 ```
 
+### Voice prompts (WAV)
+Prompts are generated automatically during compilation (Install in the HA ESPHome builder) by [`dtmf_tone`](https://github.com/pit3k/esphome-dtmf-tone): "wprowadź kod", "drzwi otwarte" and "kod nieprawidłowy" are rendered by Home Assistant's Piper TTS (`tts_get_url` API), and `ringback` is a synthesized 425 Hz tone (1 s on / 4 s off). Add to the builder's Secrets:
+```yaml
+ha_url: "http://homeassistant.local:8123"
+ha_token: "<long-lived access token>"   # HA profile -> Security -> Long-lived access tokens
+```
+Results are cached in the build directory, so rebuilds work even if HA is unreachable (the first build needs HA reachable). Pasting just `domofon.yaml` is enough; no WAV files are involved. Voice or language can be changed per clip with `tts: {text, engine, language, voice}`.
+
+Each prompt is exposed as a button ("Domofon głos: …"); pressing it only plays the clip (it does not touch the off-hook switch or the DTMF decoder, so take the line off-hook yourself first). The "Domofon sygnał oczekiwania" switch plays `ringback` in a loop (turning it off just stops playback; off-hook and the decoder are not touched). In YAML: `dtmf_tone.play_wav: {id: dtmf_gen, name: enter_code, loop: false}`; stop with `dtmf_tone.stop`.
+
 ## Enclosure
 3D-printed flat wall box: 93 × 68 × 26 mm, a base glued to the wall plus a lid held by 4 countersunk M3×10 screws in brass M3 Ø4×4 heat-set inserts. The PCB is flipped (components toward the wall) and shifted +25 mm to the right, leaving a 25.3 mm left chamber.
 - Seen from the room: the RJ11 plug sits inside the left chamber (plugged into J1), its flat cable exits through a 5 × 2.5 mm floor slot at the bottom of the left wall (sealed and pinched by a reinforced 5 mm thick plunger on the lid), the USB-C plug goes in from the top, and the wall cable comes in through a Ø12 mm hole in the back plate at (16.0; 15.5) mm.
