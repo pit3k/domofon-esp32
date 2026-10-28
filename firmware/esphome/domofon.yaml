@@ -141,18 +141,6 @@ text:
 
 number:
   - platform: template
-    id: gate_before_tone_ms
-    name: "Brama - czas przed tonem"
-    entity_category: config
-    unit_of_measurement: "ms"
-    mode: box
-    min_value: 0
-    max_value: 30000
-    step: 100
-    initial_value: 1000
-    optimistic: true
-    restore_value: true
-  - platform: template
     id: gate_tone_duration_ms
     name: "Brama - czas nadawania tonu"
     entity_category: config
@@ -176,25 +164,11 @@ number:
     initial_value: 80
     optimistic: true
     restore_value: true
-  - platform: template
-    id: gate_after_tone_ms
-    name: "Brama - czas po tonie"
-    entity_category: config
-    unit_of_measurement: "ms"
-    mode: box
-    min_value: 0
-    max_value: 30000
-    step: 100
-    initial_value: 5000
-    optimistic: true
-    restore_value: true
 
 script:
   - id: open_gate
     mode: single
     then:
-      - switch.turn_on: offhook
-      - delay: !lambda "return (uint32_t) id(gate_before_tone_ms).state;"
       - dtmf_decoder.disable: dtmf
       - dtmf_tone.play:
           id: dtmf_gen
@@ -211,8 +185,6 @@ script:
           if (n == 0) return (uint32_t) 0;
           return n * tone + (n - 1) * gap;
       - dtmf_decoder.enable: dtmf
-      - delay: !lambda "return (uint32_t) id(gate_after_tone_ms).state;"
-      - switch.turn_off: offhook
 
 button:
   - platform: template
