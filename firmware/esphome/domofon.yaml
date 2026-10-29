@@ -81,8 +81,8 @@ dtmf_tone:
   wavs:
     - name: enter_code
       tts: {text: "Wprowadź kod", voice: pl_PL-gosia-medium}
-    - name: door_opened
-      tts: {text: "Drzwi otwarte", voice: pl_PL-gosia-medium}
+    - name: opening_door
+      tts: {text: "Otwieram drzwi", voice: pl_PL-gosia-medium}
     - name: code_invalid
       tts: {text: "Kod nieprawidłowy", voice: pl_PL-gosia-medium}
     - name: ringback
@@ -192,17 +192,21 @@ button:
     on_press:
       - script.execute: open_gate
   - platform: template
+    name: "Domofon wyczyść sekwencję DTMF"
+    on_press:
+      - dtmf_decoder.clear_sequence: dtmf
+  - platform: template
     name: "Domofon głos: wprowadź kod"
     on_press:
       - dtmf_tone.play_wav:
           id: dtmf_gen
           name: enter_code
   - platform: template
-    name: "Domofon głos: drzwi otwarte"
+    name: "Domofon głos: otwieram drzwi"
     on_press:
       - dtmf_tone.play_wav:
           id: dtmf_gen
-          name: door_opened
+          name: opening_door
   - platform: template
     name: "Domofon głos: kod nieprawidłowy"
     on_press:
