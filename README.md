@@ -11,8 +11,8 @@ An interface that connects a classic **2-wire analog intercom handset line** (Po
 ## Features
 - **Ring detection** — AC-input optocoupler (LTV-814) on the line, debounced input on GPIO3.
 - **Off-hook** — PhotoMOS relay (AQY214EH, 400 V) connects a load resistor and a 600:600 line transformer, just like lifting the handset.
-- **DTMF transmit** — sine PWM (external component [esphome-dtmf-tone](https://github.com/pit3k/esphome-dtmf-tone)) summed and filtered, coupled through the transformer. Any DTMF sequence; the default sends "1" to open the gate.
-- **DTMF receive (software)** — line audio via the transformer to ADC1 (GPIO1), decoded on the ESP with a Goertzel filter bank ([esphome-dtmf-decoder](https://github.com/pit3k/esphome-dtmf-decoder)). Works only while off-hook.
+- **DTMF transmit** — sine PWM ([local ESPHome component](firmware/esphome/components/dtmf_tone)) summed and filtered, coupled through the transformer. Any DTMF sequence; the default sends "1" to open the gate.
+- **DTMF receive (software)** — line audio via the transformer to ADC1 (GPIO1), decoded on the ESP with a Goertzel filter bank ([local ESPHome component](firmware/esphome/components/dtmf_decoder)). Works only while off-hook.
 - **Galvanic isolation** — ESP ground never touches the line; 4 mm isolation gap + milled slot on the PCB.
 - **Extra handset jack** — RJ11 (J1) wired in parallel with the line.
 
@@ -54,7 +54,10 @@ An interface that connects a classic **2-wire analog intercom handset line** (Po
 │   └── enclosure/               # 3D-printed wall box (CadQuery source, STL, 3MF, STEP, previews)
 ├── firmware/esphome/
 │   ├── domofon.yaml
-│   └── secrets.yaml.example
+│   ├── secrets.yaml.example
+│   └── components/
+│       ├── dtmf_tone/            # DTMF generation and WAV/TTS playback
+│       └── dtmf_decoder/         # DTMF decoding
 ├── cnc/                         # G-code, operator guide, CAM config & scripts
 │   ├── OPERATOR_GUIDE.md       # step-by-step for PrintNC + ioSender (PL)
 │   ├── README.md               # CAM overview (EN)
@@ -100,14 +103,15 @@ cd firmware/esphome
 cp secrets.yaml.example secrets.yaml   # fill in Wi-Fi credentials
 esphome run domofon.yaml
 ```
+The local `components/` directory must stay alongside `domofon.yaml`, including when copying the configuration to an ESPHome device or builder.
 
 ### Voice prompts (WAV)
-Prompts are generated automatically during compilation (Install in the HA ESPHome builder) by [`dtmf_tone`](https://github.com/pit3k/esphome-dtmf-tone): "wprowadź kod", "drzwi otwarte" and "kod nieprawidłowy" are rendered by Home Assistant's Piper TTS (`tts_get_url` API), and `ringback` is a synthesized 425 Hz tone (1 s on / 4 s off). Add to the builder's Secrets:
+Prompts are generated automatically during compilation by the local [`dtmf_tone`](firmware/esphome/components/dtmf_tone) component: "wprowadź kod", "drzwi otwarte" and "kod nieprawidłowy" are rendered by Home Assistant's Piper TTS (`tts_get_url` API), and `ringback` is a synthesized 425 Hz tone (1 s on / 4 s off). Add to the builder's Secrets:
 ```yaml
 ha_url: "http://homeassistant.local:8123"
 ha_token: "<long-lived access token>"   # HA profile -> Security -> Long-lived access tokens
 ```
-Results are cached in the build directory, so rebuilds work even if HA is unreachable (the first build needs HA reachable). Pasting just `domofon.yaml` is enough; no WAV files are involved. Voice or language can be changed per clip with `tts: {text, engine, language, voice}`.
+Results are cached in the build directory, so rebuilds work even if HA is unreachable (the first build needs HA reachable). Keep the local `components/` directory alongside `domofon.yaml`; no WAV files are needed. Voice or language can be changed per clip with `tts: {text, engine, language, voice}`.
 
 Each prompt is exposed as a button ("Domofon głos: …"); pressing it only plays the clip (it does not touch the off-hook switch or the DTMF decoder, so take the line off-hook yourself first). The "Domofon sygnał oczekiwania" switch plays `ringback` in a loop (turning it off just stops playback; off-hook and the decoder are not touched). In YAML: `dtmf_tone.play_wav: {id: dtmf_gen, name: enter_code, loop: false}`; stop with `dtmf_tone.stop`.
 

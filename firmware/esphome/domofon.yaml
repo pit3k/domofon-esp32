@@ -1,7 +1,6 @@
 # ESP32-C3 SuperMini (HW-466B)
 # Sekrety: skopiuj secrets.yaml.example -> secrets.yaml
-# Komponenty: https://github.com/pit3k/esphome-dtmf-tone
-#             https://github.com/pit3k/esphome-dtmf-decoder
+# Komponenty: lokalne w katalogu components/
 #
 # GPIO5 = ton niski, GPIO6 = ton wysoki (sumator R8a/R8b).
 # Sekwencje: 0-9 * # A-D, spacja ignorowana, przecinek = pauza.
@@ -35,12 +34,10 @@ wifi:
 captive_portal:
 
 external_components:
-  - source: github://pit3k/esphome-dtmf-tone
-    refresh: 0s
-    components: [dtmf_tone]
-  - source: github://pit3k/esphome-dtmf-decoder
-    refresh: 0s
-    components: [dtmf_decoder]
+  - source:
+      type: local
+      path: components
+    components: [dtmf_tone, dtmf_decoder]
 
 dtmf_decoder:
   id: dtmf
