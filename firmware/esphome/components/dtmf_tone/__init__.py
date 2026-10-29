@@ -286,7 +286,7 @@ PLAY_WAV_SCHEMA = cv.Schema(
         cv.GenerateID(): cv.use_id(DtmfTone),
         cv.Required(CONF_NAME): cv.templatable(cv.string),
         cv.Optional(CONF_LOOP, default=False): cv.templatable(cv.boolean),
-        cv.Optional(CONF_PREROLL, default="500ms"): cv.templatable(cv.positive_time_period_milliseconds),
+        cv.Optional(CONF_PREROLL, default="1000ms"): cv.templatable(cv.positive_time_period_milliseconds),
     }
 )
 
