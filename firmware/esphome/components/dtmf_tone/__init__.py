@@ -32,6 +32,7 @@ CONF_PIN_HIGH = "pin_high"
 CONF_CARRIER = "carrier_frequency"
 CONF_SAMPLE_RATE = "sample_rate"
 CONF_AMPLITUDE = "amplitude"
+CONF_VOICE_AMPLITUDE = "voice_amplitude"
 CONF_HIGH = "high_tone_level"
 CONF_SEQUENCE = "sequence"
 CONF_TONE_LENGTH = "tone_length"
@@ -189,6 +190,13 @@ WAV_SCHEMA = cv.All(
     cv.has_exactly_one_key(CONF_FILE, CONF_TTS, CONF_TONE),
 )
 
+def voice_percentage(value):
+    """Procenty bez gornego limitu (cv.percentage konczy sie na 100%), np. 200%."""
+    if isinstance(value, str) and value.strip().endswith("%"):
+        value = float(value.strip()[:-1]) / 100
+    return cv.float_range(min=0, max=2.5)(value)
+
+
 def gpio_num(value):
     if isinstance(value, str):
         text = value.strip().upper()
@@ -206,6 +214,7 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional(CONF_SAMPLE_RATE, default=32000): cv.int_range(min=8000, max=48000),
         cv.Optional(CONF_AMPLITUDE, default="100%"): cv.percentage,
         cv.Optional(CONF_HIGH, default="80%"): cv.percentage,
+        cv.Optional(CONF_VOICE_AMPLITUDE, default="200%"): voice_percentage,
         cv.Optional(CONF_WAV_SAMPLE_RATE, default=8000): cv.int_range(min=4000, max=16000),
         cv.Optional(CONF_HOME_ASSISTANT): HA_SCHEMA,
         cv.Optional(CONF_WAVS, default=[]): cv.ensure_list(WAV_SCHEMA),
@@ -244,6 +253,7 @@ async def to_code(config):
     cg.add(var.set_carrier_frequency(config[CONF_CARRIER]))
     cg.add(var.set_sample_rate(config[CONF_SAMPLE_RATE]))
     cg.add(var.set_amplitude_pct(int(round(config[CONF_AMPLITUDE] * 100))))
+    cg.add(var.set_voice_pct(int(round(config[CONF_VOICE_AMPLITUDE] * 100))))
     cg.add(var.set_high_pct(int(round(config[CONF_HIGH] * 100))))
     rate = config[CONF_WAV_SAMPLE_RATE]
     for wav in config[CONF_WAVS]:

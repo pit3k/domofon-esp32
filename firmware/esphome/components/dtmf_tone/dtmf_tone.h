@@ -20,6 +20,7 @@ class DtmfTone : public Component {
   void set_carrier_frequency(uint32_t hz) { this->carrier_hz_ = hz; }
   void set_sample_rate(uint32_t hz) { this->sample_rate_ = hz; }
   void set_amplitude_pct(uint8_t pct) { this->amplitude_pct_ = pct; }
+  void set_voice_pct(uint16_t pct) { this->voice_pct_ = pct; }
   void set_high_pct(uint8_t pct) { this->high_pct_ = pct; }
 
   void setup() override;
@@ -57,6 +58,7 @@ class DtmfTone : public Component {
   uint32_t sample_rate_{32000};
   uint32_t actual_rate_{32000};
   uint8_t amplitude_pct_{100};
+  uint16_t voice_pct_{200};
   uint8_t high_pct_{80};
 
   struct Wav {

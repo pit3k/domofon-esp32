@@ -61,6 +61,7 @@ dtmf_tone:
   carrier_frequency: 200000
   sample_rate: 32000
   amplitude: 100%
+  voice_amplitude: 200%  # tylko glos/WAV, nie DTMF
   high_tone_level: 80%
   wav_sample_rate: 8000
   # Glos jest generowany podczas kompilacji przez TTS (Piper) w Home Assistant.
