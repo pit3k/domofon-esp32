@@ -263,7 +263,6 @@ void IRAM_ATTR DtmfTone::on_sample() {
     }
     if (idx >= this->wav_len_) {
       this->state_ = ST_IDLE;
-      this->playing_ = false;
       this->write_idle();
       return;
     }
@@ -292,7 +291,6 @@ void IRAM_ATTR DtmfTone::on_sample() {
         // wpadamy w render ponizej
       } else {
         this->state_ = ST_IDLE;
-        this->playing_ = false;
         this->write_idle();
         return;
       }
@@ -300,7 +298,6 @@ void IRAM_ATTR DtmfTone::on_sample() {
       const int nxt = this->next_symbol(this->seq_pos_ + 1);
       if (nxt < 0 || !this->select_symbol(static_cast<uint8_t>(nxt))) {
         this->state_ = ST_IDLE;
-        this->playing_ = false;
         this->write_idle();
         return;
       }
@@ -353,7 +350,6 @@ void DtmfTone::stop() {
   }
   this->timer_running_ = false;
   this->state_ = ST_IDLE;
-  this->playing_ = false;
   if (this->ledc_ready_) {
     this->write_idle();
   }
@@ -396,14 +392,12 @@ bool DtmfTone::play_wav(const std::string &name, bool loop, uint32_t preroll_ms)
     this->preroll_left_ = static_cast<uint32_t>(static_cast<uint64_t>(preroll_ms) * rate / 1000);
     this->wav_step_ = static_cast<uint32_t>((static_cast<uint64_t>(w.rate) << 32) / rate);
     this->state_ = ST_WAV;
-    this->playing_ = true;
     ESP_LOGI(TAG, "play wav \"%s\" (%u samples @ %u Hz)%s, preroll %u ms", name.c_str(), w.len, w.rate,
              loop ? " loop" : "", preroll_ms);
     esp_err_t err = gptimer_start(static_cast<gptimer_handle_t>(this->timer_));
     if (err != ESP_OK) {
       ESP_LOGE(TAG, "gptimer start failed: %d", err);
       this->state_ = ST_IDLE;
-      this->playing_ = false;
       return false;
     }
     this->timer_running_ = true;
@@ -464,12 +458,10 @@ void DtmfTone::play(const std::string &sequence, uint32_t tone_ms, uint32_t gap_
     return;
   }
   ESP_LOGI(TAG, "play \"%s\" tone=%ums gap=%ums", this->seq_, tone_ms, gap_ms);
-  this->playing_ = true;
   esp_err_t err = gptimer_start(static_cast<gptimer_handle_t>(this->timer_));
   if (err != ESP_OK) {
     ESP_LOGE(TAG, "gptimer start failed: %d", err);
     this->state_ = ST_IDLE;
-    this->playing_ = false;
     return;
   }
   this->timer_running_ = true;

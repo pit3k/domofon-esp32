@@ -181,6 +181,10 @@ script:
           inter_digit_gap: !lambda "return (uint32_t) id(gate_inter_digit_gap_ms).state;"
       - wait_until:
           condition:
+            lambda: "return id(dtmf_gen).is_playing();"
+          timeout: 2s
+      - wait_until:
+          condition:
             lambda: "return !id(dtmf_gen).is_playing();"
           timeout: 30s
       - dtmf_decoder.enable: dtmf
