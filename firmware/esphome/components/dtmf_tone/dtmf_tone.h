@@ -39,7 +39,7 @@ class DtmfTone : public Component {
   bool play_wav(const std::string &name, bool loop = false, uint32_t preroll_ms = 500);
   // Bias: w bezczynnosci wyjscie trzyma srodek skali (128) zamiast 0 - bez skoku DC przy starcie.
   void set_bias(bool enable);
-  bool is_playing() const { return this->state_ != ST_IDLE; }
+  bool is_playing() const { return this->playing_; }
   void IRAM_ATTR on_sample();
 
  protected:
@@ -79,6 +79,7 @@ class DtmfTone : public Component {
 
   enum : uint8_t { ST_IDLE = 0, ST_TONE = 1, ST_GAP = 2, ST_WAV = 3 };
   volatile uint8_t state_{ST_IDLE};
+  volatile bool playing_{false};
   volatile bool timer_running_{false};
 
   char seq_[65]{};

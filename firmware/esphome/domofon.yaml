@@ -179,15 +179,10 @@ script:
           sequence: !lambda "return id(gate_dtmf_sequence).state;"
           tone_length: !lambda "return (uint32_t) id(gate_tone_duration_ms).state;"
           inter_digit_gap: !lambda "return (uint32_t) id(gate_inter_digit_gap_ms).state;"
-      - delay: !lambda |-
-          uint32_t n = 0;
-          for (char c : id(gate_dtmf_sequence).state) {
-            if (c != ' ' && c != '\t') n++;
-          }
-          uint32_t tone = (uint32_t) id(gate_tone_duration_ms).state;
-          uint32_t gap = (uint32_t) id(gate_inter_digit_gap_ms).state;
-          if (n == 0) return (uint32_t) 0;
-          return n * tone + (n - 1) * gap;
+      - wait_until:
+          condition:
+            lambda: "return !id(dtmf_gen).is_playing();"
+          timeout: 30s
       - dtmf_decoder.enable: dtmf
 
 button:
