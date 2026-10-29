@@ -1,10 +1,14 @@
 # ESP32-C3 SuperMini (HW-466B)
 # Sekrety: skopiuj secrets.yaml.example -> secrets.yaml
-# Komponenty: firmware/esphome/components/ (pobierane z gita, ref: main)
+# Komponenty: firmware/esphome/components/ (pobierane z gita, ref: ${intercom_ref})
 #
 # GPIO5 = ton niski, GPIO6 = ton wysoki (sumator R8a/R8b).
 # Sekwencje: 0-9 * # A-D, spacja ignorowana, przecinek = pauza.
 # Przyklad: "1", "1234#", "9,123"
+
+substitutions:
+  # Wersja komponentow; w pakiecie z HA ustaw ten sam ref co w packages.
+  intercom_ref: main
 
 esphome:
   name: intercom
@@ -39,7 +43,7 @@ external_components:
   - source:
       type: git
       url: https://github.com/pit3k/domofon-esp32
-      ref: main
+      ref: ${intercom_ref}
       path: firmware/esphome/components
     refresh: 0s
     components: [dtmf_tone, dtmf_decoder]

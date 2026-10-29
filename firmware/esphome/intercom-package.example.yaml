@@ -3,6 +3,8 @@
 # Required secrets in the builder: wifi_ssid, wifi_password, intercom__encryption_key,
 # intercom__ap_password, ha_url, ha_token (see secrets.yaml.example).
 substitutions:
+  # Version of the firmware AND the DTMF components: `main` (latest) or a commit SHA/tag.
+  intercom_ref: main
   device_name: intercom
   device_friendly_name: Intercom
 
@@ -13,7 +15,7 @@ esphome:
 packages:
   intercom:
     url: https://github.com/pit3k/domofon-esp32
-    ref: main
+    ref: ${intercom_ref}
     refresh: 0s # re-fetch on every build
     files:
       - firmware/esphome/domofon.yaml
