@@ -1,6 +1,6 @@
 # ESP32-C3 SuperMini (HW-466B)
 # Sekrety: skopiuj secrets.yaml.example -> secrets.yaml
-# Komponenty: lokalne w katalogu components/
+# Komponenty: firmware/esphome/components/ (pobierane z gita, ref: main)
 #
 # GPIO5 = ton niski, GPIO6 = ton wysoki (sumator R8a/R8b).
 # Sekwencje: 0-9 * # A-D, spacja ignorowana, przecinek = pauza.
@@ -34,9 +34,14 @@ wifi:
 captive_portal:
 
 external_components:
+  # Git (not local), so the file also works when pulled in via `packages:` from
+  # Home Assistant, where only YAML files are fetched.
   - source:
-      type: local
-      path: components
+      type: git
+      url: https://github.com/pit3k/domofon-esp32
+      ref: main
+      path: firmware/esphome/components
+    refresh: 0s
     components: [dtmf_tone, dtmf_decoder]
 
 dtmf_decoder:
