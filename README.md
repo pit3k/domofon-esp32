@@ -104,15 +104,14 @@ cd firmware/esphome
 cp secrets.yaml.example secrets.yaml   # fill in Wi-Fi credentials
 esphome run domofon.yaml
 ```
-The DTMF components are fetched from this repository (`ref: ${intercom_ref}`, default `main`) by `external_components` in `domofon.yaml`, so no extra files need to be copied.
+The DTMF components are fetched from this repository (`ref: ${git_ref}`, default `main`) by `external_components` in `domofon.yaml`, so no extra files need to be copied.
 
 ### Home Assistant (ESPHome builder, recommended)
-Create a new device in the HA ESPHome builder and paste [`firmware/esphome/intercom-package.example.yaml`](firmware/esphome/intercom-package.example.yaml). It pulls `domofon.yaml` as a [package](https://esphome.io/components/packages/) from `main` with `refresh: 0s` (re-fetched on every build). Add the secrets from `secrets.yaml.example` to the builder's Secrets. To pin a version, set `intercom_ref` in `substitutions` to a commit SHA or tag; it selects both `domofon.yaml` and the DTMF components (default `main`).
+Create a new device in the HA ESPHome builder and paste [`firmware/esphome/intercom-package.example.yaml`](firmware/esphome/intercom-package.example.yaml). It pulls `domofon.yaml` as a [package](https://esphome.io/components/packages/) from `main` with `refresh: 0s` (re-fetched on every build). Add the secrets from `secrets.yaml.example` to the builder's Secrets. The package example contains API encryption and fallback AP settings; these are kept out of the reusable firmware package. To pin a version, set `git_ref` in `substitutions` to a commit SHA or tag; it selects both `domofon.yaml` and the DTMF components (default `main`). The HA URL defaults to `http://homeassistant.local:8123`; override `ha_url` in `substitutions` if needed.
 
 ### Voice prompts (WAV)
 Prompts are generated automatically during compilation by the [`dtmf_tone`](firmware/esphome/components/dtmf_tone) component: "wprowadź kod", "drzwi otwarte" and "kod nieprawidłowy" are rendered by Home Assistant's Piper TTS (`tts_get_url` API), and `ringback` is a synthesized 425 Hz tone (1 s on / 4 s off). Add to the builder's Secrets:
 ```yaml
-ha_url: "http://homeassistant.local:8123"
 ha_token: "<long-lived access token>"   # HA profile -> Security -> Long-lived access tokens
 ```
 Results are cached in the build directory, so rebuilds work even if HA is unreachable (the first build needs HA reachable). No WAV files are needed. Voice or language can be changed per clip with `tts: {text, engine, language, voice}`.

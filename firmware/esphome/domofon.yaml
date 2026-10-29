@@ -1,14 +1,16 @@
 # ESP32-C3 SuperMini (HW-466B)
 # Sekrety: skopiuj secrets.yaml.example -> secrets.yaml
-# Komponenty: firmware/esphome/components/ (pobierane z gita, ref: ${intercom_ref})
+# Komponenty: firmware/esphome/components/ (pobierane z gita, ref: ${git_ref})
 #
 # GPIO5 = ton niski, GPIO6 = ton wysoki (sumator R8a/R8b).
 # Sekwencje: 0-9 * # A-D, spacja ignorowana, przecinek = pauza.
 # Przyklad: "1", "1234#", "9,123"
 
 substitutions:
-  # Wersja komponentow; w pakiecie z HA ustaw ten sam ref co w packages.
-  intercom_ref: main
+  # Wersja firmware i komponentow; w pakiecie z HA ustawiana tez w packages.
+  git_ref: main
+  ha_url: "http://homeassistant.local:8123"
+  ha_token: !secret ha_token
 
 esphome:
   name: intercom
@@ -22,18 +24,12 @@ esp32:
 
 logger:
 
-api:
-  encryption:
-    key: !secret intercom__encryption_key
 ota:
   - platform: esphome
 
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  ap:
-    ssid: Intercom Fallback Hotspot
-    password: !secret intercom__ap_password
 
 captive_portal:
 
@@ -43,7 +39,7 @@ external_components:
   - source:
       type: git
       url: https://github.com/pit3k/domofon-esp32
-      ref: ${intercom_ref}
+      ref: ${git_ref}
       path: firmware/esphome/components
     refresh: 0s
     components: [dtmf_tone, dtmf_decoder]
@@ -82,8 +78,8 @@ dtmf_tone:
   wav_sample_rate: 8000
   # Glos jest generowany podczas kompilacji przez TTS (Piper) w Home Assistant.
   home_assistant:
-    url: !secret ha_url
-    token: !secret ha_token
+    url: ${ha_url}
+    token: ${ha_token}
   wavs:
     - name: enter_code
       tts: {text: "Wprowadź kod", voice: pl_PL-gosia-medium}
