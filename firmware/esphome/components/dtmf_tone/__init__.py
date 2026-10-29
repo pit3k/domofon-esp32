@@ -194,7 +194,7 @@ def voice_percentage(value):
     """Procenty bez gornego limitu (cv.percentage konczy sie na 100%), np. 200%."""
     if isinstance(value, str) and value.strip().endswith("%"):
         value = float(value.strip()[:-1]) / 100
-    return cv.float_range(min=0, max=2.5)(value)
+    return cv.float_range(min=0, max=4.0)(value)
 
 
 def gpio_num(value):
