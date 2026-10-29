@@ -1,0 +1,30 @@
+# Example for the Home Assistant ESPHome builder: paste this as a new device.
+# It pulls the whole firmware (domofon.yaml + DTMF components) from GitHub.
+# Required secrets in the builder: wifi_ssid, wifi_password, ha_token,
+# intercom__encryption_key, intercom__ap_password (see secrets.yaml.example).
+substitutions:
+  # Version of the firmware and DTMF components: `main` or a commit SHA/tag.
+  git_ref: main
+  device_name: intercom
+  device_friendly_name: Intercom
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+
+api:
+  encryption:
+    key: !secret intercom__encryption_key
+
+wifi:
+  ap:
+    ssid: Intercom Fallback Hotspot
+    password: !secret intercom__ap_password
+
+packages:
+  intercom:
+    url: https://github.com/pit3k/domofon-esp32
+    ref: ${git_ref}
+    refresh: 0s # re-fetch on every build
+    files:
+      - firmware/esphome/domofon.yaml
