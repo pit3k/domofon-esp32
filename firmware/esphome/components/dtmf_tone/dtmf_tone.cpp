@@ -234,11 +234,27 @@ int IRAM_ATTR DtmfTone::next_symbol(uint8_t from) const {
 
 void IRAM_ATTR DtmfTone::on_sample() {
   if (this->state_ == ST_IDLE) {
-    this->write_pair(0, 0);
+    this->write_idle();
     return;
   }
 
   if (this->state_ == ST_WAV) {
+    if (this->preroll_left_ > 0) {
+      // Szum na starcie: otwiera VAD/bramke szumow i AGC po drugiej stronie linii, zanim pojdzie mowa.
+      this->preroll_left_--;
+      uint32_t x = this->noise_state_;
+      x ^= x << 13;
+      x ^= x >> 17;
+      x ^= x << 5;
+      this->noise_state_ = x;
+      const int32_t n = (static_cast<int32_t>(x >> 24) - 128) / 4 * this->amplitude_pct_ / 100;
+      if (this->dual_) {
+        this->write_pair(128 + n / 2, 128 + n / 2);
+      } else {
+        this->write_pair(128 + n, 128);
+      }
+      return;
+    }
     uint32_t idx = static_cast<uint32_t>(this->wav_acc_ >> 32);
     if (idx >= this->wav_len_ && this->wav_loop_) {
       this->wav_acc_ -= static_cast<uint64_t>(this->wav_len_) << 32;
@@ -246,7 +262,7 @@ void IRAM_ATTR DtmfTone::on_sample() {
     }
     if (idx >= this->wav_len_) {
       this->state_ = ST_IDLE;
-      this->write_pair(0, 0);
+      this->write_idle();
       return;
     }
     this->wav_acc_ += this->wav_step_;
@@ -274,14 +290,14 @@ void IRAM_ATTR DtmfTone::on_sample() {
         // wpadamy w render ponizej
       } else {
         this->state_ = ST_IDLE;
-        this->write_pair(0, 0);
+        this->write_idle();
         return;
       }
     } else {
       const int nxt = this->next_symbol(this->seq_pos_ + 1);
       if (nxt < 0 || !this->select_symbol(static_cast<uint8_t>(nxt))) {
         this->state_ = ST_IDLE;
-        this->write_pair(0, 0);
+        this->write_idle();
         return;
       }
     }
@@ -323,7 +339,7 @@ void DtmfTone::loop() {
   if (this->timer_running_ && this->state_ == ST_IDLE && this->timer_ != nullptr) {
     gptimer_stop(static_cast<gptimer_handle_t>(this->timer_));
     this->timer_running_ = false;
-    this->write_pair(0, 0);
+    this->write_idle();
   }
 }
 
@@ -334,7 +350,7 @@ void DtmfTone::stop() {
   this->timer_running_ = false;
   this->state_ = ST_IDLE;
   if (this->ledc_ready_) {
-    this->write_pair(0, 0);
+    this->write_idle();
   }
 }
 
@@ -350,7 +366,14 @@ void DtmfTone::add_wav(const std::string &name, const uint8_t *data, uint32_t le
   this->wavs_.push_back({name, data, len, rate_hz});
 }
 
-bool DtmfTone::play_wav(const std::string &name, bool loop) {
+void DtmfTone::set_bias(bool enable) {
+  this->bias_ = enable;
+  if (this->ledc_ready_ && this->state_ == ST_IDLE) {
+    this->write_idle();
+  }
+}
+
+bool DtmfTone::play_wav(const std::string &name, bool loop, uint32_t preroll_ms) {
   if (!this->ledc_ready_ || this->timer_ == nullptr) {
     ESP_LOGW(TAG, "generator nie gotowy");
     return false;
@@ -365,9 +388,11 @@ bool DtmfTone::play_wav(const std::string &name, bool loop) {
     this->wav_len_ = w.len;
     this->wav_acc_ = 0;
     this->wav_loop_ = loop;
+    this->preroll_left_ = static_cast<uint32_t>(static_cast<uint64_t>(preroll_ms) * rate / 1000);
     this->wav_step_ = static_cast<uint32_t>((static_cast<uint64_t>(w.rate) << 32) / rate);
     this->state_ = ST_WAV;
-    ESP_LOGI(TAG, "play wav \"%s\" (%u samples @ %u Hz)%s", name.c_str(), w.len, w.rate, loop ? " loop" : "");
+    ESP_LOGI(TAG, "play wav \"%s\" (%u samples @ %u Hz)%s, preroll %u ms", name.c_str(), w.len, w.rate,
+             loop ? " loop" : "", preroll_ms);
     esp_err_t err = gptimer_start(static_cast<gptimer_handle_t>(this->timer_));
     if (err != ESP_OK) {
       ESP_LOGE(TAG, "gptimer start failed: %d", err);
