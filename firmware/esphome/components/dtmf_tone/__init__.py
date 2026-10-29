@@ -23,6 +23,9 @@ DtmfTone = ns.class_("DtmfTone", cg.Component)
 PlayWavAction = ns.class_("PlayWavAction", automation.Action)
 PlayAction = ns.class_("PlayAction", automation.Action)
 StopAction = ns.class_("StopAction", automation.Action)
+BiasAction = ns.class_("BiasAction", automation.Action)
+CONF_PREROLL = "preroll_ms"
+CONF_ENABLE = "enable"
 
 CONF_PIN_LOW = "pin_low"
 CONF_PIN_HIGH = "pin_high"
@@ -273,6 +276,14 @@ PLAY_WAV_SCHEMA = cv.Schema(
         cv.GenerateID(): cv.use_id(DtmfTone),
         cv.Required(CONF_NAME): cv.templatable(cv.string),
         cv.Optional(CONF_LOOP, default=False): cv.templatable(cv.boolean),
+        cv.Optional(CONF_PREROLL, default="500ms"): cv.templatable(cv.positive_time_period_milliseconds),
+    }
+)
+
+BIAS_SCHEMA = cv.Schema(
+    {
+        cv.GenerateID(): cv.use_id(DtmfTone),
+        cv.Required(CONF_ENABLE): cv.templatable(cv.boolean),
     }
 )
 
@@ -313,4 +324,13 @@ async def play_wav_to_code(config, action_id, template_arg, args):
     await cg.register_parented(var, config[CONF_ID])
     cg.add(var.set_name(await cg.templatable(config[CONF_NAME], args, cg.std_string)))
     cg.add(var.set_loop(await cg.templatable(config[CONF_LOOP], args, cg.bool_)))
+    cg.add(var.set_preroll_ms(await cg.templatable(config[CONF_PREROLL], args, cg.uint32)))
+    return var
+
+
+@_register_action("dtmf_tone.bias", BiasAction, BIAS_SCHEMA)
+async def bias_to_code(config, action_id, template_arg, args):
+    var = cg.new_Pvariable(action_id, template_arg)
+    await cg.register_parented(var, config[CONF_ID])
+    cg.add(var.set_enable(await cg.templatable(config[CONF_ENABLE], args, cg.bool_)))
     return var

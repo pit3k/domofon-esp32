@@ -98,9 +98,15 @@ switch:
     pin: GPIO4
     restore_mode: ALWAYS_OFF
     on_turn_on:
+      - dtmf_tone.bias:
+          id: dtmf_gen
+          enable: true
       - dtmf_decoder.enable: dtmf
     on_turn_off:
       - dtmf_tone.stop: dtmf_gen
+      - dtmf_tone.bias:
+          id: dtmf_gen
+          enable: false
       - dtmf_decoder.disable: dtmf
       - dtmf_decoder.clear_sequence: dtmf
 
@@ -113,6 +119,7 @@ switch:
           id: dtmf_gen
           name: ringback
           loop: true
+          preroll_ms: 0ms
     turn_off_action:
       - dtmf_tone.stop: dtmf_gen
 

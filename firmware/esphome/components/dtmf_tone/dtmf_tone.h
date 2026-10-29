@@ -34,12 +34,19 @@ class DtmfTone : public Component {
 
   // Glos: 8-bit unsigned PCM (128 = cisza) o czestotliwosci rate_hz, wbudowany przy kompilacji.
   void add_wav(const std::string &name, const uint8_t *data, uint32_t len, uint32_t rate_hz);
-  bool play_wav(const std::string &name, bool loop = false);
+  // preroll_ms: szum przed glosem (patrz on_sample).
+  bool play_wav(const std::string &name, bool loop = false, uint32_t preroll_ms = 500);
+  // Bias: w bezczynnosci wyjscie trzyma srodek skali (128) zamiast 0 - bez skoku DC przy starcie.
+  void set_bias(bool enable);
   bool is_playing() const { return this->state_ != ST_IDLE; }
   void IRAM_ATTR on_sample();
 
  protected:
   void IRAM_ATTR write_pair(int duty_low, int duty_high);
+  void IRAM_ATTR write_idle() {
+    const int level = this->bias_ ? 128 : 0;
+    this->write_pair(level, level);
+  }
   bool IRAM_ATTR select_symbol(uint8_t pos);
   int IRAM_ATTR next_symbol(uint8_t from) const;
 
@@ -64,6 +71,9 @@ class DtmfTone : public Component {
   uint64_t wav_acc_{0};
   uint32_t wav_step_{0};
   volatile bool wav_loop_{false};
+  volatile bool bias_{false};
+  volatile uint32_t preroll_left_{0};
+  uint32_t noise_state_{2463534242u};
 
   enum : uint8_t { ST_IDLE = 0, ST_TONE = 1, ST_GAP = 2, ST_WAV = 3 };
   volatile uint8_t state_{ST_IDLE};
@@ -103,8 +113,18 @@ template<typename... Ts> class PlayWavAction : public Action<Ts...>, public Pare
  public:
   TEMPLATABLE_VALUE(std::string, name)
   TEMPLATABLE_VALUE(bool, loop)
+  TEMPLATABLE_VALUE(uint32_t, preroll_ms)
 
-  void play(Ts... x) override { this->parent_->play_wav(this->name_.value(x...), this->loop_.value(x...)); }
+  void play(Ts... x) override {
+    this->parent_->play_wav(this->name_.value(x...), this->loop_.value(x...), this->preroll_ms_.value(x...));
+  }
+};
+
+template<typename... Ts> class BiasAction : public Action<Ts...>, public Parented<DtmfTone> {
+ public:
+  TEMPLATABLE_VALUE(bool, enable)
+
+  void play(Ts... x) override { this->parent_->set_bias(this->enable_.value(x...)); }
 };
 
 template<typename... Ts> class StopAction : public Action<Ts...>, public Parented<DtmfTone> {
