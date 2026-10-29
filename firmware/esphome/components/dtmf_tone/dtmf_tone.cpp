@@ -172,7 +172,8 @@ void DtmfTone::dump_config() {
   }
   ESP_LOGCONFIG(TAG, "  Carrier: %u Hz", this->carrier_hz_);
   ESP_LOGCONFIG(TAG, "  Sample rate: %u Hz", this->actual_rate_);
-  ESP_LOGCONFIG(TAG, "  Amplitude: %u%%, high tone: %u%%", this->amplitude_pct_, this->high_pct_);
+  ESP_LOGCONFIG(TAG, "  Amplitude: %u%%, high tone: %u%%, voice: %u%%", this->amplitude_pct_, this->high_pct_,
+                this->voice_pct_);
 }
 
 void IRAM_ATTR DtmfTone::write_pair(int duty_low, int duty_high) {
@@ -266,7 +267,7 @@ void IRAM_ATTR DtmfTone::on_sample() {
       return;
     }
     this->wav_acc_ += this->wav_step_;
-    int32_t v = (static_cast<int32_t>(this->wav_data_[idx]) - 128) * this->amplitude_pct_ / 100;
+    int32_t v = (static_cast<int32_t>(this->wav_data_[idx]) - 128) * this->voice_pct_ / 100;
     if (this->dual_) {
       // Oba piny sumuja sie w siatce rezystorow, wiec kazdy dostaje polowe sygnalu.
       this->write_pair(128 + v / 2, 128 + v / 2);
