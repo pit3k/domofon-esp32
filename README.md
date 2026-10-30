@@ -10,7 +10,7 @@ An interface that connects a classic **2-wire analog intercom handset line** (Po
 
 ## Features
 - **Ring detection** — AC-input optocoupler (LTV-814) on the line, debounced input on GPIO3.
-- **Off-hook** — PhotoMOS relay (AQY214EH, 400 V) connects a load resistor and a 600:600 line transformer, just like lifting the handset.
+- **Off-hook** — PhotoMOS relay (AQY214EH, 400 V) connects a load resistor and a 600:600 line transformer, just like lifting the handset. The line is forced back on-hook when a configurable limit elapses (default 60 s), whatever took it off-hook.
 - **DTMF transmit** — sine PWM ([ESPHome component in this repo](firmware/esphome/components/dtmf_tone)) summed and filtered, coupled through the transformer. Any DTMF sequence; the default sends "1" to open the gate.
 - **DTMF receive (software)** — line audio via the transformer to ADC1 (GPIO1), decoded on the ESP with a Goertzel filter bank ([ESPHome component in this repo](firmware/esphome/components/dtmf_decoder)). Works only while off-hook.
 - **Galvanic isolation** — ESP ground never touches the line; 4 mm isolation gap + milled slot on the PCB.
@@ -23,7 +23,8 @@ An interface that connects a classic **2-wire analog intercom handset line** (Po
 | `button` | Domofon otwórz furtkę | off-hook → pause (default 1 s) → DTMF sequence → on-hook (default 1 s after the tones) |
 | `text` | Brama - sekwencja DTMF | digits to dial (default `1`; `0-9 * # A-D`, comma = pause) |
 | `number` | Brama - czas … | pause before, tone length, inter-digit gap, pause after (defaults 1000 / 200 / 80 / 1000 ms) |
-| `switch` | Domofon off-hook | manual off-hook / on-hook (always off after reboot) |
+| `switch` | Domofon off-hook | manual off-hook / on-hook (always off after reboot; also forced on-hook by the time limit) |
+| `number` | Domofon - maks. czas off-hook | maximum off-hook time, any cause (default 60 s, range 10–3600 s) |
 | `event` | Domofon DTMF | fired for every decoded digit (0–9, *, #, A–D) |
 | `text_sensor` | Domofon DTMF ostatnia cyfra | last decoded digit |
 | `text_sensor` | Domofon DTMF sekwencja | digits concatenated, cleared after 3 s silence or on-hook |
