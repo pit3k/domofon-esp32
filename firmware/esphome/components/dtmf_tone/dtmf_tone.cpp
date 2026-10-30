@@ -367,13 +367,6 @@ void DtmfTone::add_wav(const std::string &name, const uint8_t *data, uint32_t le
   this->wavs_.push_back({name, data, len, rate_hz});
 }
 
-void DtmfTone::set_bias(bool enable) {
-  this->bias_ = enable;
-  if (this->ledc_ready_ && this->state_ == ST_IDLE) {
-    this->write_idle();
-  }
-}
-
 bool DtmfTone::play_wav(const std::string &name, bool loop, uint32_t preroll_ms) {
   if (!this->ledc_ready_ || this->timer_ == nullptr) {
     ESP_LOGW(TAG, "generator nie gotowy");
