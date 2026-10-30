@@ -99,6 +99,29 @@ binary_sensor:
     lambda: |-
       return id(dtmf_gen).is_playing();
 
+globals:
+  # millis() when the line went off-hook. 0 means on-hook.
+  - id: offhook_since_ms
+    type: uint32_t
+    initial_value: "0"
+
+interval:
+  # Hang up no matter what took the line off-hook (manual switch, automation, script).
+  - interval: 1s
+    then:
+      - if:
+          condition:
+            and:
+              - switch.is_on: offhook
+              - lambda: |-
+                  const uint32_t limit_ms = (uint32_t) (id(offhook_max_s).state * 1000.0f);
+                  return id(offhook_since_ms) != 0 && (millis() - id(offhook_since_ms)) >= limit_ms;
+          then:
+            - logger.log:
+                format: "Off-hook limit reached (%.0f s), forcing on-hook"
+                args: ["id(offhook_max_s).state"]
+            - switch.turn_off: offhook
+
 switch:
   - platform: gpio
     id: offhook
@@ -106,11 +129,14 @@ switch:
     pin: GPIO4
     restore_mode: ALWAYS_OFF
     on_turn_on:
+      - lambda: "id(offhook_since_ms) = millis();"
       - dtmf_tone.bias:
           id: dtmf_gen
           enable: true
       - dtmf_decoder.enable: dtmf
     on_turn_off:
+      - lambda: "id(offhook_since_ms) = 0;"
+      - switch.turn_off: ringback_loop
       - dtmf_tone.stop: dtmf_gen
       - dtmf_tone.bias:
           id: dtmf_gen
@@ -166,6 +192,18 @@ number:
     max_value: 2000
     step: 10
     initial_value: 80
+    optimistic: true
+    restore_value: true
+  - platform: template
+    id: offhook_max_s
+    name: "Domofon - maks. czas off-hook"
+    entity_category: config
+    unit_of_measurement: "s"
+    mode: box
+    min_value: 10
+    max_value: 3600
+    step: 1
+    initial_value: 60
     optimistic: true
     restore_value: true
 
