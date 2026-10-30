@@ -42,7 +42,6 @@ class DtmfTone : public Component {
 
  protected:
   void IRAM_ATTR write_pair(int duty_low, int duty_high);
-  // Duty 0: pin stale niski, bez fali 200 kHz. Srodek skali tylko w trakcie tonu.
   void IRAM_ATTR write_idle() { this->write_pair(0, 0); }
   bool IRAM_ATTR select_symbol(uint8_t pos);
   int IRAM_ATTR next_symbol(uint8_t from) const;

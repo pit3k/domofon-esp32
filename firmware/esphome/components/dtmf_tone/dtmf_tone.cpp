@@ -116,7 +116,6 @@ void DtmfTone::setup() {
       return;
     }
   }
-  // Duty 0: pin stale niski, bez zboczy 200 kHz. Srodek skali tylko w trakcie tonu.
   this->write_pair(0, 0);
 
   const uint32_t res_hz = 10000000;
