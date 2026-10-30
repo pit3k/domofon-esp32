@@ -156,9 +156,8 @@ switch:
     restore_mode: ALWAYS_OFF
     on_turn_on:
       - lambda: "id(offhook_since_ms) = millis();"
-      - dtmf_tone.bias:
-          id: dtmf_gen
-          enable: true
+      # Duty 0 w bezczynnosci: srodek skali (bias 128) to fala 200 kHz na GPIO5/GPIO6.
+      # Ten sam transformator zasila ADC, wiec bias na czas sluchania zaglusza DTMF.
       - dtmf_decoder.enable: dtmf
     on_turn_off:
       - lambda: |-
@@ -167,9 +166,6 @@ switch:
           id(gate_decoder_paused) = false;
       - switch.turn_off: ringback_loop
       - dtmf_tone.stop: dtmf_gen
-      - dtmf_tone.bias:
-          id: dtmf_gen
-          enable: false
       - dtmf_decoder.disable: dtmf
       - dtmf_decoder.clear_sequence: dtmf
 
@@ -382,3 +378,22 @@ button:
     name: "Domofon wyczyść sekwencję DTMF"
     on_press:
       - dtmf_decoder.clear_sequence: dtmf
+  # Petla lokalna: nadaj krotkie "5" i zostaw dekoder wlaczony, zeby sprawdzic,
+  # czy ADC slyszy wlasny ton. Nie schodzi na off-hook, wiec ton nie idzie w linie.
+  - platform: template
+    name: "Domofon test dekodera DTMF"
+    entity_category: diagnostic
+    on_press:
+      - dtmf_decoder.clear_sequence: dtmf
+      - dtmf_decoder.enable: dtmf
+      - dtmf_tone.play:
+          id: dtmf_gen
+          sequence: "5"
+          tone_length: 250ms
+          inter_digit_gap: 40ms
+      - delay: 700ms
+      - if:
+          condition:
+            switch.is_off: offhook
+          then:
+            - dtmf_decoder.disable: dtmf

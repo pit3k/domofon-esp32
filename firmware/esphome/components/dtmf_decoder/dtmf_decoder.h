@@ -64,6 +64,13 @@ class DTMFDecoder : public Component {
   bool debug_{false};
   bool enabled_{true};
   bool running_{false};
+  bool raw_logged_{false};
+  bool channel_warned_{false};
+  bool read_warned_{false};
+  bool stats_logged_{false};
+  uint32_t stat_dropped_{0};
+  uint8_t reject_logs_{0};
+  float stat_abs_{0};
 
   // Goertzel
   float coeff_[8];
