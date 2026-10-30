@@ -104,6 +104,16 @@ globals:
   - id: offhook_since_ms
     type: uint32_t
     initial_value: "0"
+  # Which one-shot clip owns the generator. 0 = none.
+  # 1 enter_code, 2 opening_door, 3 code_invalid, 4 gate DTMF.
+  # Ringback is not tracked here: that switch stays on until it is turned off.
+  - id: active_clip
+    type: int
+    initial_value: "0"
+  # Gate DTMF mutes the decoder so the device does not hear its own tones.
+  - id: gate_decoder_paused
+    type: bool
+    initial_value: "false"
 
 interval:
   # Hang up no matter what took the line off-hook (manual switch, automation, script).
@@ -122,6 +132,22 @@ interval:
                 args: ["id(offhook_max_s).state"]
             - switch.turn_off: offhook
 
+  # One-shot switches follow active_clip && is_playing(), so they drop on their
+  # own when audio stops. Clear the stale owner here, and re-enable the decoder
+  # if the gate sequence had paused it. Ringback loops, so it is left alone.
+  - interval: 100ms
+    then:
+      - if:
+          condition:
+            lambda: "return id(active_clip) != 0 && !id(dtmf_gen).is_playing();"
+          then:
+            - lambda: "id(active_clip) = 0;"
+      - if:
+          condition:
+            lambda: "return id(gate_decoder_paused) && !id(dtmf_gen).is_playing();"
+          then:
+            - script.execute: release_gate_decoder
+
 switch:
   - platform: gpio
     id: offhook
@@ -135,7 +161,10 @@ switch:
           enable: true
       - dtmf_decoder.enable: dtmf
     on_turn_off:
-      - lambda: "id(offhook_since_ms) = 0;"
+      - lambda: |-
+          id(offhook_since_ms) = 0;
+          id(active_clip) = 0;
+          id(gate_decoder_paused) = false;
       - switch.turn_off: ringback_loop
       - dtmf_tone.stop: dtmf_gen
       - dtmf_tone.bias:
@@ -148,14 +177,109 @@ switch:
     id: ringback_loop
     name: "Domofon sygnał oczekiwania"
     optimistic: true
+    # Stays on for the whole wait. It does not clear itself when a loop
+    # iteration ends. Hangup (including the off-hook time limit) turns it off.
     turn_on_action:
+      - lambda: "id(active_clip) = 0;"
+      - script.execute: release_gate_decoder
       - dtmf_tone.play_wav:
           id: dtmf_gen
           name: ringback
           loop: true
           preroll_ms: 0ms
     turn_off_action:
-      - dtmf_tone.stop: dtmf_gen
+      # turn_off always runs the action, even if the switch was already off.
+      # Stop audio only when this switch was actually on, so a redundant
+      # turn_off does not cut off a voice clip or the gate tones.
+      - if:
+          condition:
+            switch.is_on: ringback_loop
+          then:
+            - dtmf_tone.stop: dtmf_gen
+
+  # One-shot clips. Turning the switch on starts playback. The lambda reports
+  # on only while that clip owns the generator, so the switch turns itself off
+  # when the sound finishes (or when another clip takes over). Turning it off
+  # early stops playback. None of these touch the off-hook relay.
+  - platform: template
+    id: wav_enter_code
+    name: "Domofon głos: wprowadź kod"
+    restore_mode: ALWAYS_OFF
+    optimistic: true
+    lambda: |-
+      if (id(active_clip) == 1 && id(dtmf_gen).is_playing()) return true;
+      return false;
+    turn_on_action:
+      - script.execute:
+          id: play_voice_clip
+          clip_id: 1
+          wav_name: enter_code
+    turn_off_action:
+      - script.execute:
+          id: stop_clip_if_owner
+          clip_id: 1
+  - platform: template
+    id: wav_opening_door
+    name: "Domofon głos: otwieram drzwi"
+    restore_mode: ALWAYS_OFF
+    optimistic: true
+    lambda: |-
+      if (id(active_clip) == 2 && id(dtmf_gen).is_playing()) return true;
+      return false;
+    turn_on_action:
+      - script.execute:
+          id: play_voice_clip
+          clip_id: 2
+          wav_name: opening_door
+    turn_off_action:
+      - script.execute:
+          id: stop_clip_if_owner
+          clip_id: 2
+  - platform: template
+    id: wav_code_invalid
+    name: "Domofon głos: kod nieprawidłowy"
+    restore_mode: ALWAYS_OFF
+    optimistic: true
+    lambda: |-
+      if (id(active_clip) == 3 && id(dtmf_gen).is_playing()) return true;
+      return false;
+    turn_on_action:
+      - script.execute:
+          id: play_voice_clip
+          clip_id: 3
+          wav_name: code_invalid
+    turn_off_action:
+      - script.execute:
+          id: stop_clip_if_owner
+          clip_id: 3
+  - platform: template
+    id: gate_open
+    name: "Domofon otwórz furtkę"
+    restore_mode: ALWAYS_OFF
+    optimistic: true
+    lambda: |-
+      if (id(active_clip) == 4 && id(dtmf_gen).is_playing()) return true;
+      return false;
+    turn_on_action:
+      - if:
+          condition:
+            switch.is_on: ringback_loop
+          then:
+            - switch.turn_off: ringback_loop
+      - lambda: |-
+          id(active_clip) = 4;
+          id(gate_decoder_paused) = true;
+      - dtmf_decoder.disable: dtmf
+      - dtmf_tone.play:
+          id: dtmf_gen
+          sequence: !lambda "return id(gate_dtmf_sequence).state;"
+          tone_length: !lambda "return (uint32_t) id(gate_tone_duration_ms).state;"
+          inter_digit_gap: !lambda "return (uint32_t) id(gate_inter_digit_gap_ms).state;"
+    turn_off_action:
+      - script.execute:
+          id: stop_clip_if_owner
+          clip_id: 4
+      - script.execute: release_gate_decoder
 
 text:
   - platform: template
@@ -208,49 +332,53 @@ number:
     restore_value: true
 
 script:
-  - id: open_gate
+  # Re-enable the decoder after gate DTMF, but only while the line is still off-hook.
+  - id: release_gate_decoder
     mode: single
     then:
-      - dtmf_decoder.disable: dtmf
-      - dtmf_tone.play:
+      - if:
+          condition:
+            lambda: "return id(gate_decoder_paused);"
+          then:
+            - lambda: "id(gate_decoder_paused) = false;"
+            - if:
+                condition:
+                  switch.is_on: offhook
+                then:
+                  - dtmf_decoder.enable: dtmf
+
+  - id: stop_clip_if_owner
+    mode: single
+    parameters:
+      clip_id: int
+    then:
+      - if:
+          condition:
+            lambda: "return id(active_clip) == clip_id;"
+          then:
+            - lambda: "id(active_clip) = 0;"
+            - dtmf_tone.stop: dtmf_gen
+
+  - id: play_voice_clip
+    mode: restart
+    parameters:
+      clip_id: int
+      wav_name: string
+    then:
+      - if:
+          condition:
+            switch.is_on: ringback_loop
+          then:
+            - switch.turn_off: ringback_loop
+      - lambda: "id(active_clip) = clip_id;"
+      - dtmf_tone.stop: dtmf_gen
+      - script.execute: release_gate_decoder
+      - dtmf_tone.play_wav:
           id: dtmf_gen
-          sequence: !lambda "return id(gate_dtmf_sequence).state;"
-          tone_length: !lambda "return (uint32_t) id(gate_tone_duration_ms).state;"
-          inter_digit_gap: !lambda "return (uint32_t) id(gate_inter_digit_gap_ms).state;"
-      - wait_until:
-          condition:
-            lambda: "return id(dtmf_gen).is_playing();"
-          timeout: 2s
-      - wait_until:
-          condition:
-            lambda: "return !id(dtmf_gen).is_playing();"
-          timeout: 30s
-      - dtmf_decoder.enable: dtmf
+          name: !lambda "return wav_name;"
 
 button:
-  - platform: template
-    name: "Domofon otwórz furtkę"
-    on_press:
-      - script.execute: open_gate
   - platform: template
     name: "Domofon wyczyść sekwencję DTMF"
     on_press:
       - dtmf_decoder.clear_sequence: dtmf
-  - platform: template
-    name: "Domofon głos: wprowadź kod"
-    on_press:
-      - dtmf_tone.play_wav:
-          id: dtmf_gen
-          name: enter_code
-  - platform: template
-    name: "Domofon głos: otwieram drzwi"
-    on_press:
-      - dtmf_tone.play_wav:
-          id: dtmf_gen
-          name: opening_door
-  - platform: template
-    name: "Domofon głos: kod nieprawidłowy"
-    on_press:
-      - dtmf_tone.play_wav:
-          id: dtmf_gen
-          name: code_invalid
