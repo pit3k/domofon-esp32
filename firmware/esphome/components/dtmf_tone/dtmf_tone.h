@@ -106,7 +106,7 @@ template<typename... Ts> class PlayAction : public Action<Ts...>, public Parente
   TEMPLATABLE_VALUE(uint32_t, tone_length)
   TEMPLATABLE_VALUE(uint32_t, inter_digit_gap)
 
-  void play(Ts... x) override {
+  void play(const Ts &...x) override {
     this->parent_->play(this->sequence_.value(x...), this->tone_length_.value(x...), this->inter_digit_gap_.value(x...));
   }
 };
@@ -117,7 +117,7 @@ template<typename... Ts> class PlayWavAction : public Action<Ts...>, public Pare
   TEMPLATABLE_VALUE(bool, loop)
   TEMPLATABLE_VALUE(uint32_t, preroll_ms)
 
-  void play(Ts... x) override {
+  void play(const Ts &...x) override {
     this->parent_->play_wav(this->name_.value(x...), this->loop_.value(x...), this->preroll_ms_.value(x...));
   }
 };
@@ -126,12 +126,12 @@ template<typename... Ts> class BiasAction : public Action<Ts...>, public Parente
  public:
   TEMPLATABLE_VALUE(bool, enable)
 
-  void play(Ts... x) override { this->parent_->set_bias(this->enable_.value(x...)); }
+  void play(const Ts &...x) override { this->parent_->set_bias(this->enable_.value(x...)); }
 };
 
 template<typename... Ts> class StopAction : public Action<Ts...>, public Parented<DtmfTone> {
  public:
-  void play(Ts... x) override { this->parent_->stop(); }
+  void play(const Ts &...x) override { this->parent_->stop(); }
 };
 
 }  // namespace dtmf_tone

@@ -20,7 +20,7 @@ An interface that connects a classic **2-wire analog intercom handset line** (Po
 | Entity | Name | What it does |
 |---|---|---|
 | `binary_sensor` | Domofon dzwonek | on while someone rings (50 ms on / 1.5 s off filter) |
-| `button` | Domofon otwórz furtkę | off-hook → pause (default 1 s) → DTMF sequence → on-hook (default 1 s after the tones) |
+| `switch` | Domofon otwórz furtkę | sends the DTMF sequence; stays on while the tones play and turns itself off when they finish (does not change off-hook) |
 | `text` | Brama - sekwencja DTMF | digits to dial (default `1`; `0-9 * # A-D`, comma = pause) |
 | `number` | Brama - czas … | pause before, tone length, inter-digit gap, pause after (defaults 1000 / 200 / 80 / 1000 ms) |
 | `switch` | Domofon off-hook | manual off-hook / on-hook (always off after reboot; also forced on-hook by the time limit) |
@@ -117,7 +117,7 @@ ha_token: "<long-lived access token>"   # HA profile -> Security -> Long-lived a
 ```
 Results are cached in the build directory, so rebuilds work even if HA is unreachable (the first build needs HA reachable). No WAV files are needed. Voice or language can be changed per clip with `tts: {text, engine, language, voice}`.
 
-Each prompt is exposed as a button ("Domofon głos: …"); pressing it only plays the clip (it does not touch the off-hook switch or the DTMF decoder, so take the line off-hook yourself first). The "Domofon sygnał oczekiwania" switch plays `ringback` in a loop (turning it off just stops playback; off-hook and the decoder are not touched). In YAML: `dtmf_tone.play_wav: {id: dtmf_gen, name: enter_code, loop: false}`; stop with `dtmf_tone.stop`.
+Each prompt is a switch ("Domofon głos: …"). Turning it on plays the clip and the switch turns itself off when playback finishes, so an automation can turn it on and wait for `off` instead of watching the diagnostic "Domofon audio aktywne" sensor. The same applies to "Domofon otwórz furtkę" (the DTMF sequence). These switches do not take the line off-hook and do not change the DTMF decoder, except the gate switch, which pauses the decoder for the duration of its own tones. "Domofon sygnał oczekiwania" is the exception: it plays `ringback` in a loop and stays on until something turns it off (a manual turn-off, another clip starting, or hangup — including the off-hook time limit). In YAML: `dtmf_tone.play_wav: {id: dtmf_gen, name: enter_code, loop: false}`; stop with `dtmf_tone.stop`.
 
 ## Enclosure
 3D-printed flat wall box: 93 × 68 × 26 mm, a base glued to the wall plus a lid held by 4 countersunk M3×10 screws in brass M3 Ø4×4 heat-set inserts. The PCB is flipped (components toward the wall) and shifted +25 mm to the right, leaving a 25.3 mm left chamber.
