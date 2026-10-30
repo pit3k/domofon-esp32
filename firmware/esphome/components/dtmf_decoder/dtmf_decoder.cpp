@@ -75,6 +75,13 @@ void DTMFDecoder::set_enabled(bool en) {
     this->candidate_count_ = this->off_count_ = 0;
     this->stat_samples_ = 0;
     this->stat_start_ms_ = millis();
+    this->stat_dropped_ = 0;
+    this->stat_abs_ = 0;
+    this->raw_logged_ = false;
+    this->channel_warned_ = false;
+    this->read_warned_ = false;
+    this->stats_logged_ = false;
+    this->reject_logs_ = 0;
     esp_err_t err = adc_continuous_start(this->handle_);
     if (err != ESP_OK) {
       ESP_LOGE(TAG, "adc_continuous_start failed: %s", esp_err_to_name(err));
@@ -112,13 +119,42 @@ void DTMFDecoder::loop() {
   for (int guard = 0; guard < 16; guard++) {
     uint32_t len = 0;
     esp_err_t err = adc_continuous_read(this->handle_, s_read_buf, READ_BUF_BYTES, &len, 0);
-    if (err != ESP_OK || len == 0)
+    if (err != ESP_OK || len == 0) {
+      if (err != ESP_OK && err != ESP_ERR_TIMEOUT && !this->read_warned_) {
+        this->read_warned_ = true;
+        ESP_LOGW(TAG, "adc_continuous_read: %s", esp_err_to_name(err));
+      }
       break;
+    }
     for (uint32_t i = 0; i + SOC_ADC_DIGI_RESULT_BYTES <= len; i += SOC_ADC_DIGI_RESULT_BYTES) {
       const adc_digi_output_data_t *p = reinterpret_cast<const adc_digi_output_data_t *>(&s_read_buf[i]);
-      if (p->type2.unit != 0 || p->type2.channel != this->channel_)
+      if (!this->raw_logged_) {
+        this->raw_logged_ = true;
+        ESP_LOGI(TAG, "ADC slowo 0x%08x data=%u ch=%u unit=%u (oczekiwany kanal %u)", p->val, p->type2.data,
+                 p->type2.channel, p->type2.unit, this->channel_);
+      }
+      // Jeden kanal w tabeli. Na ESP32-C3 tag kanalu w DMA bywa 0, wiec odrzucanie
+      // po numerze kanalu gubi wszystkie probki i dekoder milczy.
+      if (p->type2.unit != 0) {
+        this->stat_dropped_++;
         continue;
+      }
+      if (p->type2.channel != this->channel_ && !this->channel_warned_) {
+        this->channel_warned_ = true;
+        ESP_LOGW(TAG, "tag kanalu %u zamiast %u — probka idzie do Goertzela", p->type2.channel, this->channel_);
+      }
       this->process_sample_(static_cast<float>(p->type2.data));
+    }
+  }
+
+  if (!this->stats_logged_ && now - this->stat_start_ms_ >= 2000) {
+    this->stats_logged_ = true;
+    if (this->stat_samples_ == 0) {
+      ESP_LOGW(TAG, "ADC: brak probek przez 2 s (odrzucone slowa: %u)", this->stat_dropped_);
+    } else {
+      const float rate = this->stat_samples_ * 1000.0f / static_cast<float>(now - this->stat_start_ms_);
+      ESP_LOGI(TAG, "ADC: %.0f Hz, |x|~%.1f LSB, odrzucone slowa: %u", rate,
+               this->stat_abs_ / static_cast<float>(this->stat_samples_), this->stat_dropped_);
     }
   }
 
@@ -133,6 +169,7 @@ void DTMFDecoder::loop() {
 
 void DTMFDecoder::process_sample_(float raw) {
   this->stat_samples_++;
+  this->stat_abs_ += fabsf(raw - (this->have_dc_ ? this->dc_ : raw));
   if (!this->have_dc_) {
     this->dc_ = raw;
     this->have_dc_ = true;
@@ -212,6 +249,10 @@ void DTMFDecoder::evaluate_block_() {
     ESP_LOGD(TAG, "blok: %.0fHz A=%.0f, %.0fHz A=%.0f, ton/calosc=%.2f -> %c %s", DTMF_FREQS[r], amp_r,
              DTMF_FREQS[c], amp_c, energy > 0 ? (power[r] + power[c]) / energy : 0.0f, digit ? digit : '-',
              reason ? reason : "");
+  } else if (digit == 0 && reason != nullptr && amp_r >= this->min_amplitude_ && amp_c >= this->min_amplitude_ &&
+             this->reject_logs_ < 4) {
+    this->reject_logs_++;
+    ESP_LOGI(TAG, "odrzut (%s): %.0fHz A=%.0f, %.0fHz A=%.0f", reason, DTMF_FREQS[r], amp_r, DTMF_FREQS[c], amp_c);
   }
   this->handle_detection_(digit);
 }

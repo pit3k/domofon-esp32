@@ -156,9 +156,6 @@ switch:
     restore_mode: ALWAYS_OFF
     on_turn_on:
       - lambda: "id(offhook_since_ms) = millis();"
-      - dtmf_tone.bias:
-          id: dtmf_gen
-          enable: true
       - dtmf_decoder.enable: dtmf
     on_turn_off:
       - lambda: |-
@@ -167,9 +164,6 @@ switch:
           id(gate_decoder_paused) = false;
       - switch.turn_off: ringback_loop
       - dtmf_tone.stop: dtmf_gen
-      - dtmf_tone.bias:
-          id: dtmf_gen
-          enable: false
       - dtmf_decoder.disable: dtmf
       - dtmf_decoder.clear_sequence: dtmf
 
